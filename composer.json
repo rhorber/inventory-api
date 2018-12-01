@@ -1,0 +1,27 @@
+{
+    "name": "rhorber/inventory-api",
+    "description": "API for inventory application. (Application to manage (cellar) inventory.",
+    "type": "project",
+    "keywords": ["inventory", "API"],
+    "homepage": "https://github.com/rhorber/inventory-api",
+    "readme": "README.md",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Raphael Horber",
+            "email": "raphael.horber@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-pdo": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Rhorber\\Inventory\\API\\": "src/"
+        }
+    }
+}
