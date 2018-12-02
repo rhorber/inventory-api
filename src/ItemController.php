@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 02.12.2018
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 02.12.2018
  */
 class ItemController
 {
@@ -166,6 +166,32 @@ class ItemController
     }
 
     /**
+     * Moves the item one position down.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 02.12.2018
+     */
+    public function moveDown()
+    {
+        $this->_moveItem("+", "-");
+    }
+
+    /**
+     * Moves the item one position up.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 02.12.2018
+     */
+    public function moveUp()
+    {
+        $this->_moveItem("-", "+");
+    }
+
+    /**
      * Insert or update an item.
      *
      * - Gets the request's payload
@@ -210,6 +236,44 @@ class ItemController
         $params = [':id' => $this->_itemId];
 
         $this->_database->prepareAndExecute($query, $params);
+        Http::sendNoContent();
+    }
+
+    /**
+     * Moves the item one position up or down.
+     *
+     * @param string $thisDirection  Direction of this item ("+" or "-" for down or up respectively).
+     * @param string $otherDirection Direction of the other item ("-" or "+" for down or up respectively).
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 02.12.2018
+     */
+    private function _moveItem($thisDirection, $otherDirection)
+    {
+        $query  = "SELECT position FROM items WHERE id = :id";
+        $params = [':id' => $this->_itemId];
+
+        $statement = $this->_database->prepareAndExecute($query, $params);
+        $thisItem  = $statement->fetch();
+        $position  = $thisItem['position'];
+
+        $moveOther   = "
+            UPDATE items SET
+                position = position ".$otherDirection." 1
+            WHERE position = :position ".$thisDirection." 1
+        ";
+        $paramsOther = [':position' => $position];
+        $this->_database->prepareAndExecute($moveOther, $paramsOther);
+
+        $moveThis = "
+            UPDATE items SET
+                position = position ".$thisDirection." 1
+            WHERE id = :id
+        ";
+        $this->_database->prepareAndExecute($moveThis, $params);
+
         Http::sendNoContent();
     }
 }

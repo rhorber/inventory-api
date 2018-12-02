@@ -175,6 +175,8 @@ class ApiController
      * - "GET .../item/:id/decrement"
      * - "GET .../item/:id/increment"
      * - "GET .../item/:id/reset-stock"
+     * - "GET .../item/:id/move-down"
+     * - "GET .../item/:id/move-up"
      * - "PUT .../item/:id"
      * - "POST .../item"
      *
@@ -184,11 +186,12 @@ class ApiController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 02.12.2018
      */
     private function _handleItemRequest()
     {
-        if (in_array($this->_action, [null, "increment", "decrement", "reset-stock"]) === false) {
+        $knownActions = [null, "increment", "decrement", "reset-stock", "move-down", "move-up"];
+        if (in_array($this->_action, $knownActions) === false) {
             Http::sendNotFound();
         }
 
@@ -204,6 +207,10 @@ class ApiController
             $controller->decrementStock();
         } elseif ($this->_action === "increment") {
             $controller->incrementStock();
+        } elseif ($this->_action === "move-down") {
+            $controller->moveDown();
+        } elseif ($this->_action === "move-up") {
+            $controller->moveUp();
         } elseif ($this->_action === "reset-stock") {
             $controller->resetStock();
         }
