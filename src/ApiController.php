@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 02.12.2018
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 02.12.2018
  */
 class ApiController
 {
@@ -80,12 +80,14 @@ class ApiController
      *
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 02.12.2018
      */
     private function __construct()
     {
         $this->_uri    = $_SERVER['REQUEST_URI'];
         $this->_method = $_SERVER['REQUEST_METHOD'];
+
+        error_log("Request: ".$this->_method." ".$this->_uri);
 
         $this->_validatePrefix();
         $this->_parseUri();
