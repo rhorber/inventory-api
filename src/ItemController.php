@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 02.12.2018
+ * @version 04.12.2018
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 02.12.2018
+ * @version 04.12.2018
  */
 class ItemController
 {
@@ -76,25 +76,33 @@ class ItemController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 04.12.2018
      */
     public function addItem()
     {
-        $query  = "
+        $maxQuery  = "
+            SELECT COALESCE(MAX(position), 0) + 1 AS newPosition
+            FROM items
+        ";
+        $maxResult = $this->_database->queryAndFetch($maxQuery);
+        $position  = $maxResult[0]['newPosition'];
+
+        $insertQuery = "
             INSERT INTO items (
-                name, stock, size, unit
+                name, stock, size, unit, position
             ) VALUES (
-                :name, :stock, :size, :unit
+                :name, :stock, :size, :unit, :position
             )
         ";
-        $params = [
-            ':name'  => "N/A",
-            ':stock' => 0,
-            ':size'  => 0,
-            ':unit'  => "N/A",
+        $params      = [
+            ':name'     => "N/A",
+            ':stock'    => 0,
+            ':size'     => 0,
+            ':unit'     => "N/A",
+            ':position' => $position,
         ];
 
-        $this->_modifyItem($query, $params);
+        $this->_modifyItem($insertQuery, $params);
     }
 
     /**
