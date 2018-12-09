@@ -81,11 +81,11 @@ class ItemController
     public function addItem()
     {
         $maxQuery  = "
-            SELECT COALESCE(MAX(position), 0) + 1 AS newPosition
+            SELECT COALESCE(MAX(position), 0) + 1 AS new_position
             FROM items
         ";
         $maxResult = $this->_database->queryAndFetch($maxQuery);
-        $position  = $maxResult[0]['newPosition'];
+        $position  = $maxResult[0]['new_position'];
 
         $insertQuery = "
             INSERT INTO items (

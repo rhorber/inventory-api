@@ -138,7 +138,7 @@ class Database
         ";
         $insertValues = [
             ':type'      => 'query',
-            ':content'   => $content,
+            ':content'   => str_replace(["\n", "\r"], " ", $content),
             ':clientIp'  => $_SERVER['REMOTE_ADDR'],
             ':userAgent' => $_SERVER['HTTP_USER_AGENT'],
         ];
