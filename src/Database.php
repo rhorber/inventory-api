@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 09.12.2018
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 09.12.2018
  */
 class Database
 {
@@ -57,10 +57,11 @@ class Database
      * @return  array[] The result rows as associative arrays.
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 09.12.2018
      */
     public function queryAndFetch(string $query): array
     {
+        $this->_logQuery($query);
         $statement = $this->_pdo->query($query);
         return $statement->fetchAll();
     }
@@ -68,18 +69,22 @@ class Database
     /**
      * Executes the passed query (as prepared statement) and returns its result.
      *
-     * @param string $query      Query to execute.
-     * @param array  $parameters Parameters to bind.
+     * @param string  $query      Query to execute.
+     * @param array   $parameters Parameters to bind.
+     * @param boolean $logQuery   Whether to log the query or not (default: true).
      *
      * @return  \PDOStatement Query's result as PDOStatement
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 09.12.2018
      */
-    public function prepareAndExecute(string $query, array $parameters): \PDOStatement
+    public function prepareAndExecute(string $query, array $parameters, bool $logQuery = true): \PDOStatement
     {
-        $statement = $this->_pdo->prepare($query);
+        if ($logQuery === true) {
+            $this->_logQuery($query, $parameters);
+        }
 
+        $statement = $this->_pdo->prepare($query);
         foreach ($parameters as $parameter => $value) {
             $statement->bindValue($parameter, $value);
         }
@@ -104,6 +109,41 @@ class Database
         ) {
             Http::sendServerError();
         }
+    }
+
+    /**
+     * Logs a query into the database.
+     *
+     * @param string $logQuery  Query to log.
+     * @param array  $logValues Values to log.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 09.12.2018
+     */
+    private function _logQuery(string $logQuery, array $logValues = [])
+    {
+        $content = $logQuery;
+        if (count($logValues) > 0) {
+            $content .= " | ".print_r($logValues, true);
+        }
+
+        $insertQuery  = "
+            INSERT INTO log (
+                type, content, client_ip, user_agent
+            ) VALUES (
+                :type, :content, :clientIp, :userAgent
+            )
+        ";
+        $insertValues = [
+            ':type'      => 'query',
+            ':content'   => $content,
+            ':clientIp'  => $_SERVER['REMOTE_ADDR'],
+            ':userAgent' => $_SERVER['HTTP_USER_AGENT'],
+        ];
+
+        $this->prepareAndExecute($insertQuery, $insertValues, false);
     }
 }
 
