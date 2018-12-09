@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 05.12.2018
+ * @version 09.12.2018
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 05.12.2018
+ * @version 09.12.2018
  */
 class ItemController
 {
@@ -76,7 +76,7 @@ class ItemController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.12.2018
+     * @version 09.12.2018
      */
     public function addItem()
     {
@@ -89,13 +89,12 @@ class ItemController
 
         $insertQuery = "
             INSERT INTO items (
-                id, name, stock, size, unit, position
+                name, stock, size, unit, position
             ) VALUES (
-                :id, :name, :stock, :size, :unit, :position
+                :name, :stock, :size, :unit, :position
             )
         ";
         $params      = [
-            ':id'       => $position,
             ':name'     => "N/A",
             ':stock'    => 0,
             ':size'     => 0,
