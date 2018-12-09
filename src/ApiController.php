@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 02.12.2018
+ * @version 09.12.2018
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 02.12.2018
+ * @version 09.12.2018
  */
 class ApiController
 {
@@ -80,14 +80,14 @@ class ApiController
      *
      * @access  public
      * @author  Raphael Horber
-     * @version 02.12.2018
+     * @version 09.12.2018
      */
     private function __construct()
     {
         $this->_uri    = $_SERVER['REQUEST_URI'];
         $this->_method = $_SERVER['REQUEST_METHOD'];
 
-        error_log("Request: ".$this->_method." ".$this->_uri);
+        $this->_logRequest();
 
         $this->_validatePrefix();
         $this->_parseUri();
@@ -103,6 +103,34 @@ class ApiController
         }
 
         Http::sendNotFound();
+    }
+
+    /**
+     * Logs a request into the database.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 09.12.2018
+     */
+    private function _logRequest()
+    {
+        $query  = "
+            INSERT INTO log (
+                type, content, client_ip, user_agent
+            ) VALUES (
+                :type, :content, :clientIp, :userAgent
+            )
+        ";
+        $values = [
+            ':type'      => 'request',
+            ':content'   => $this->_method." | ".$this->_uri,
+            ':clientIp'  => $_SERVER['REMOTE_ADDR'],
+            ':userAgent' => $_SERVER['HTTP_USER_AGENT'],
+        ];
+
+        $database = new Database();
+        $database->prepareAndExecute($query, $values, false);
     }
 
     /**
