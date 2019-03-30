@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 09.12.2018
+ * @version 30.03.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 09.12.2018
+ * @version 30.03.2019
  */
 class ApiController
 {
@@ -78,7 +78,7 @@ class ApiController
     /**
      * Constructor: Parses the request and delegates its fulfilment to the specific class/method.
      *
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 09.12.2018
      */
@@ -109,7 +109,7 @@ class ApiController
      * Logs a request into the database.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 09.12.2018
      */
@@ -137,7 +137,7 @@ class ApiController
      * Validates the URI prefix (must be "/api/v1/").
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 01.12.2018
      */
@@ -152,7 +152,7 @@ class ApiController
      * Parses the URI (sets the private segment properties).
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 01.12.2018
      */
@@ -173,7 +173,7 @@ class ApiController
      * Only valid request is "GET .../inventory", which returns all items.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 01.12.2018
      */
@@ -212,7 +212,7 @@ class ApiController
      * the database operation will be delegated to {@link ItemController}.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 02.12.2018
      */
