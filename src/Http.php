@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 30.03.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 30.03.2019
  */
 class Http
 {
@@ -53,6 +53,20 @@ class Http
         self::_setAllowedOrigin();
 
         http_response_code(204);
+        die();
+    }
+
+    /**
+     * Sends an unauthorized 401 response.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 30.03.2019
+     */
+    public static function sendUnauthorized()
+    {
+        http_response_code(401);
         die();
     }
 
