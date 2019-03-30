@@ -111,22 +111,23 @@ class ApiController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 09.12.2018
+     * @version 30.03.2019
      */
     private function _logRequest()
     {
         $query  = "
             INSERT INTO log (
-                type, content, client_ip, user_agent
+                type, content, client_name, client_ip, user_agent
             ) VALUES (
-                :type, :content, :clientIp, :userAgent
+                :type, :content, :clientName, :clientIp, :userAgent
             )
         ";
         $values = [
-            ':type'      => 'request',
-            ':content'   => $this->_method." | ".$this->_uri,
-            ':clientIp'  => $_SERVER['REMOTE_ADDR'],
-            ':userAgent' => $_SERVER['HTTP_USER_AGENT'],
+            ':type'       => 'request',
+            ':content'    => $this->_method." | ".$this->_uri,
+            ':clientName' => Authorization::getClientName(),
+            ':clientIp'   => $_SERVER['REMOTE_ADDR'],
+            ':userAgent'  => $_SERVER['HTTP_USER_AGENT'],
         ];
 
         $database = new Database();

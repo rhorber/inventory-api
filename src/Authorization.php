@@ -20,6 +20,15 @@ namespace Rhorber\Inventory\API;
 class Authorization
 {
     /**
+     * Name of the client which belongs to the request's authorization token.
+     *
+     * @access private
+     * @var    string
+     */
+    private static $_clientName;
+
+
+    /**
      * Checks for an authorization, and if so verifies it.
      *
      * @return  void
@@ -30,6 +39,16 @@ class Authorization
     public static function verifyAuth()
     {
         new Authorization();
+    }
+
+    /**
+     * Returns the name of the client which belongs to the request's authorization token.
+     *
+     * @return string Name of the authorized client.
+     */
+    public static function getClientName()
+    {
+        return self::$_clientName;
     }
 
     /**
@@ -67,15 +86,22 @@ class Authorization
     {
         $token = substr($authorization, 7);
 
-        $query = "SELECT * FROM tokens WHERE token = :token AND active = 1";
+        $query  = "
+            SELECT name
+            FROM tokens
+            WHERE token = :token AND active = 1
+        ";
         $values = [':token' => $token];
 
-        $database = new Database();
+        $database  = new Database();
         $statement = $database->prepareAndExecute($query, $values);
 
         if ($statement->rowCount() !== 1) {
             Http::sendUnauthorized();
         }
+        $row = $statement->fetch();
+
+        self::$_clientName = $row['name'];
     }
 }
 

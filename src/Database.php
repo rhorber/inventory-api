@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 09.12.2018
+ * @version 30.03.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 09.12.2018
+ * @version 30.03.2019
  */
 class Database
 {
@@ -120,7 +120,7 @@ class Database
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 09.12.2018
+     * @version 30.03.2019
      */
     private function _logQuery(string $logQuery, array $logValues = [])
     {
@@ -131,16 +131,17 @@ class Database
 
         $insertQuery  = "
             INSERT INTO log (
-                type, content, client_ip, user_agent
+                type, content, client_name, client_ip, user_agent
             ) VALUES (
-                :type, :content, :clientIp, :userAgent
+                :type, :content, :clientName, :clientIp, :userAgent
             )
         ";
         $insertValues = [
-            ':type'      => 'query',
-            ':content'   => str_replace(["\n", "\r"], " ", $content),
-            ':clientIp'  => $_SERVER['REMOTE_ADDR'],
-            ':userAgent' => $_SERVER['HTTP_USER_AGENT'],
+            ':type'       => 'query',
+            ':content'    => str_replace(["\n", "\r"], " ", $content),
+            ':clientName' => Authorization::getClientName(),
+            ':clientIp'   => $_SERVER['REMOTE_ADDR'],
+            ':userAgent'  => $_SERVER['HTTP_USER_AGENT'],
         ];
 
         $this->prepareAndExecute($insertQuery, $insertValues, false);
