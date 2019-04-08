@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 30.03.2019
+ * @version 05.04.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 30.03.2019
+ * @version 05.04.2019
  */
 class ApiController
 {
@@ -155,13 +155,22 @@ class ApiController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 05.04.2019
      */
     private function _parseUri()
     {
         $uri = mb_substr($this->_uri, 8);
 
-        list($this->_entity, $this->_entityId, $this->_action) = explode("/", $uri);
+        $pathParts = explode("/", $uri);
+        if (count($pathParts) > 0) {
+            $this->_entity = $pathParts[0];
+        }
+        if (count($pathParts) > 1) {
+            $this->_entityId = $pathParts[1];
+        }
+        if (count($pathParts) > 2) {
+            $this->_action = $pathParts[2];
+        }
 
         if ($this->_entityId !== null && intval($this->_entityId) === 0) {
             Http::sendNotFound();
