@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 05.04.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.12.2018
+ * @version 05.04.2019
  */
 class Helpers
 {
@@ -49,6 +49,46 @@ class Helpers
 
         foreach ($config as $key => $value) {
             $_ENV[$key] = $value;
+        }
+    }
+
+    /**
+     * Validates if the expected environment variables exist and are not empty.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 05.04.2019
+     */
+    public static function validateEnvVariables()
+    {
+        foreach (['DATABASE_DSN', 'DATABASE_USERNAME', 'DATABASE_PASSWORD'] as $variableName) {
+            if (empty($_ENV[$variableName])) {
+                \error_log("Environment variable '".$variableName."' is not defined!");
+                Http::sendServerError();
+            }
+        }
+
+        if (empty($_ENV['ALLOWED_ORIGIN'])) {
+            \error_log("Environment variable 'ALLOWED_ORIGIN' is not defined!");
+
+            $query  = "
+                INSERT INTO log (
+                    type, content, client_ip, user_agent
+                ) VALUES (
+                    :type, :content, :clientIp, :userAgent
+                )
+            ";
+            $values = [
+                ':type'      => "error",
+                ':content'   => "Environment variable 'ALLOWED_ORIGIN' is not defined!",
+                ':clientIp'  => $_SERVER['REMOTE_ADDR'],
+                ':userAgent' => $_SERVER['HTTP_USER_AGENT'],
+            ];
+
+            $database = new Database();
+            $database->prepareAndExecute($query, $values, false);
+            Http::sendServerError();
         }
     }
 

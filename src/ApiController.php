@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 09.12.2018
+ * @version 05.04.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 09.12.2018
+ * @version 05.04.2019
  */
 class ApiController
 {
@@ -78,7 +78,7 @@ class ApiController
     /**
      * Constructor: Parses the request and delegates its fulfilment to the specific class/method.
      *
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 09.12.2018
      */
@@ -109,24 +109,25 @@ class ApiController
      * Logs a request into the database.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
-     * @version 09.12.2018
+     * @version 30.03.2019
      */
     private function _logRequest()
     {
         $query  = "
             INSERT INTO log (
-                type, content, client_ip, user_agent
+                type, content, client_name, client_ip, user_agent
             ) VALUES (
-                :type, :content, :clientIp, :userAgent
+                :type, :content, :clientName, :clientIp, :userAgent
             )
         ";
         $values = [
-            ':type'      => 'request',
-            ':content'   => $this->_method." | ".$this->_uri,
-            ':clientIp'  => $_SERVER['REMOTE_ADDR'],
-            ':userAgent' => $_SERVER['HTTP_USER_AGENT'],
+            ':type'       => 'request',
+            ':content'    => $this->_method." | ".$this->_uri,
+            ':clientName' => Authorization::getClientName(),
+            ':clientIp'   => $_SERVER['REMOTE_ADDR'],
+            ':userAgent'  => $_SERVER['HTTP_USER_AGENT'],
         ];
 
         $database = new Database();
@@ -137,7 +138,7 @@ class ApiController
      * Validates the URI prefix (must be "/api/v1/").
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 01.12.2018
      */
@@ -152,15 +153,24 @@ class ApiController
      * Parses the URI (sets the private segment properties).
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 05.04.2019
      */
     private function _parseUri()
     {
         $uri = mb_substr($this->_uri, 8);
 
-        list($this->_entity, $this->_entityId, $this->_action) = explode("/", $uri);
+        $pathParts = explode("/", $uri);
+        if (count($pathParts) > 0) {
+            $this->_entity = $pathParts[0];
+        }
+        if (count($pathParts) > 1) {
+            $this->_entityId = $pathParts[1];
+        }
+        if (count($pathParts) > 2) {
+            $this->_action = $pathParts[2];
+        }
 
         if ($this->_entityId !== null && intval($this->_entityId) === 0) {
             Http::sendNotFound();
@@ -173,7 +183,7 @@ class ApiController
      * Only valid request is "GET .../inventory", which returns all items.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 01.12.2018
      */
@@ -212,7 +222,7 @@ class ApiController
      * the database operation will be delegated to {@link ItemController}.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 02.12.2018
      */
