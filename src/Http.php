@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 30.03.2019
+ * @version 04.04.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 30.03.2019
+ * @version 04.04.2019
  */
 class Http
 {
@@ -27,11 +27,11 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 04.04.2019
      */
     public static function sendJsonResponse(array $response)
     {
-        self::_setAllowedOrigin();
+        self::_setCorsHeaders();
         header("Content-Type: application/json");
 
         http_response_code(200);
@@ -46,11 +46,11 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 04.04.2019
      */
     public static function sendNoContent()
     {
-        self::_setAllowedOrigin();
+        self::_setCorsHeaders();
 
         http_response_code(204);
         die();
@@ -62,11 +62,17 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 30.03.2019
+     * @version 04.04.2019
      */
     public static function sendUnauthorized()
     {
-        http_response_code(401);
+        self::_setCorsHeaders();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(204);
+        }else{
+            http_response_code(401);
+        }
         die();
     }
 
@@ -99,18 +105,25 @@ class Http
     }
 
     /**
-     * Sets the "Access-Control-Allow-Origin" header with `$_ENV['ALLOWED_ORIGIN']`.
+     * Sets the "Access-Control-Allow-*" headers.
+     *
+     * - the "Access-Control-Allow-Origin" header with `$_ENV['ALLOWED_ORIGIN']`
+     * - the "Access-Control-Allow-Headers" header with "Authorization"
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 04.04.2019
      */
-    private static function _setAllowedOrigin()
+    private static function _setCorsHeaders()
     {
+        // TODO: Verify 'Access-Control-Request-*' headers; send all 'Access-Control-Allow-*' headers conditionally
+        // TODO: Set "Access-Control-Max-Age" header.
         if (empty($_ENV['ALLOWED_ORIGIN']) === false) {
             header("Access-Control-Allow-Origin: ".$_ENV['ALLOWED_ORIGIN']);
+            header("Vary: Origin");
         }
+        header("Access-Control-Allow-Headers: Authorization, Content-Type");
     }
 
     /**
