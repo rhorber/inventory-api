@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 04.04.2019
+ * @version 20.04.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,10 +15,55 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 04.04.2019
+ * @version 20.04.2019
  */
 class Http
 {
+    /**
+     * Methods allowed to request with `Access-Control-Request-Method` header (uppercase).
+     *
+     * @access private
+     * @var    string[]
+     */
+    private static $allowedMethods = ['GET', 'PUT', 'POST'];
+
+    /**
+     * Headers allowed to request with `Access-Control-Request-Headers` header (lowercase).
+     *
+     * @access private
+     * @var    string[]
+     */
+    private static $allowedHeaders = ['authorization', 'content-type'];
+
+
+    /**
+     * Handles the server side of CORS (verifies and sets headers, and handles and verifies preflight requests).
+     *
+     * - Verifies the Origin. If it is invalid, aborts with an error response
+     * - Checks for a preflight request.
+     * - If it is a preflight request, verifies it. If it is invalid, aborts with an error response.
+     * - Sets the `Access-Control-Allow-Origin` header.
+     *
+     * @param string $method Request method (`$_SERVER['REQUEST_METHOD']`).
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 20.04.2019
+     */
+    public static function handleCors(string $method)
+    {
+        self::verifyOrigin();
+
+        if ($method === 'OPTIONS' && empty($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) === false) {
+            self::handlePreflightRequest();
+            return;
+        }
+
+        header('Access-Control-Allow-Origin: '.$_ENV['ALLOWED_ORIGIN']);
+        header("Vary: Origin");
+    }
+
     /**
      * Sends a 200 response with the response as encoded JSON.
      *
@@ -27,11 +72,10 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2019
+     * @version 20.04.2019
      */
     public static function sendJsonResponse(array $response)
     {
-        self::_setCorsHeaders();
         header("Content-Type: application/json");
 
         http_response_code(200);
@@ -46,13 +90,25 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2019
+     * @version 20.04.2019
      */
     public static function sendNoContent()
     {
-        self::_setCorsHeaders();
-
         http_response_code(204);
+        die();
+    }
+
+    /**
+     * Sends a bad request 400 response.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 20.04.2019
+     */
+    public static function sendBadRequest()
+    {
+        http_response_code(400);
         die();
     }
 
@@ -62,17 +118,25 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2019
+     * @version 20.04.2019
      */
     public static function sendUnauthorized()
     {
-        self::_setCorsHeaders();
+        http_response_code(401);
+        die();
+    }
 
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(204);
-        }else{
-            http_response_code(401);
-        }
+    /**
+     * Sends a forbidden 403 response.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 20.04.2019
+     */
+    public static function sendForbidden()
+    {
+        http_response_code(403);
         die();
     }
 
@@ -91,6 +155,20 @@ class Http
     }
 
     /**
+     * Sends a method not allowed 405 response.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 20.04.2019
+     */
+    public static function sendMethodNotAllowed()
+    {
+        http_response_code(405);
+        die();
+    }
+
+    /**
      * Sends an empty 500 response.
      *
      * @return  void
@@ -105,25 +183,55 @@ class Http
     }
 
     /**
-     * Sets the "Access-Control-Allow-*" headers.
-     *
-     * - the "Access-Control-Allow-Origin" header with `$_ENV['ALLOWED_ORIGIN']`
-     * - the "Access-Control-Allow-Headers" header with "Authorization"
+     * Verifies the `Origin` header.
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2019
+     * @version 20.04.2019
      */
-    private static function _setCorsHeaders()
+    private static function verifyOrigin()
     {
-        // TODO: Verify 'Access-Control-Request-*' headers; send all 'Access-Control-Allow-*' headers conditionally
-        // TODO: Set "Access-Control-Max-Age" header.
-        if (empty($_ENV['ALLOWED_ORIGIN']) === false) {
-            header("Access-Control-Allow-Origin: ".$_ENV['ALLOWED_ORIGIN']);
-            header("Vary: Origin");
+        if (empty($_SERVER['HTTP_ORIGIN'])) {
+            Http::sendBadRequest();
+        } elseif ($_SERVER['HTTP_ORIGIN'] !== $_ENV['ALLOWED_ORIGIN']) {
+            Http::sendForbidden();
         }
-        header("Access-Control-Allow-Headers: Authorization, Content-Type");
+    }
+
+    /**
+     * Handles a preflight (`OPTIONS`) request.
+     *
+     * It verifies the `Access-Control-Request-*` headers (if something is invalid, aborts with an error response)
+     * and sets the `Access-Control-Allow-*` headers.
+     *
+     * @return  void
+     * @access  public
+     * @author  Raphael Horber
+     * @version 20.04.2019
+     */
+    private static function handlePreflightRequest()
+    {
+        if (in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], self::$allowedMethods) === false) {
+            Http::sendMethodNotAllowed();
+        }
+
+        if (empty($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']) === false) {
+            $requestedHeaders = mb_strtolower($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']);
+
+            foreach (explode(',', $requestedHeaders) as $requestedHeader) {
+                if (in_array($requestedHeader, self::$allowedHeaders) === false) {
+                    Http::sendForbidden();
+                }
+            }
+        }
+
+        // TODO: Verify Methods and Headers per resource and set response headers accordingly.
+        header('Access-Control-Allow-Methods: '.implode(', ', self::$allowedMethods));
+        header('Access-Control-Allow-Headers: '.implode(', ', self::$allowedHeaders));
+        header('Access-Control-Allow-Origin: '.$_ENV['ALLOWED_ORIGIN']);
+        header("Vary: Origin");
+        Http::sendNoContent();
     }
 
     /**

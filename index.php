@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 05.04.2019
+ * @version 20.04.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,8 +15,6 @@ require_once __DIR__.'/vendor/autoload.php';
 
 Helpers::loadEnvFile();
 Helpers::validateEnvVariables();
-
-Authorization::verifyAuth();
 
 ApiController::handleRequest();
 
