@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 05.04.2019
+ * @version 20.04.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 05.04.2019
+ * @version 20.04.2019
  */
 class ApiController
 {
@@ -80,14 +80,17 @@ class ApiController
      *
      * @access  private
      * @author  Raphael Horber
-     * @version 09.12.2018
+     * @version 20.04.2019
      */
     private function __construct()
     {
         $this->_uri    = $_SERVER['REQUEST_URI'];
-        $this->_method = $_SERVER['REQUEST_METHOD'];
+        $this->_method = mb_strtoupper($_SERVER['REQUEST_METHOD']);
 
         $this->_logRequest();
+
+        Http::handleCors($this->_method);
+        Authorization::verifyAuth();
 
         $this->_validatePrefix();
         $this->_parseUri();
@@ -185,17 +188,12 @@ class ApiController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 20.04.2019
      */
     private function _handleInventoryRequest()
     {
         if ($this->_uri !== "/api/v1/inventory") {
             Http::sendNotFound();
-        }
-
-        if ($this->_method === "OPTIONS") {
-            header("Access-Control-Allow-Headers: Content-Type");
-            Http::sendNoContent();
         }
 
         $database = new Database();
@@ -224,19 +222,13 @@ class ApiController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 02.12.2018
+     * @version 20.04.2019
      */
     private function _handleItemRequest()
     {
         $knownActions = [null, "increment", "decrement", "reset-stock", "move-down", "move-up"];
         if (in_array($this->_action, $knownActions) === false) {
             Http::sendNotFound();
-        }
-
-        if ($this->_method === "OPTIONS") {
-            header("Access-Control-Allow-Headers: Content-Type");
-            header("Access-Control-Allow-Methods: PUT");
-            Http::sendNoContent();
         }
 
         $controller = new ItemController($this->_entityId);
