@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 09.12.2018
+ * @version 16.11.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 09.12.2018
+ * @version 16.11.2019
  */
 class ItemController
 {
@@ -76,7 +76,7 @@ class ItemController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 09.12.2018
+     * @version 16.11.2019
      */
     public function addItem()
     {
@@ -89,17 +89,18 @@ class ItemController
 
         $insertQuery = "
             INSERT INTO items (
-                name, stock, size, unit, position
+                name, size, unit, best_before, stock, position
             ) VALUES (
-                :name, :stock, :size, :unit, :position
+                :name, :size, :unit, :best_before, :stock, :position
             )
         ";
         $params      = [
-            ':name'     => "N/A",
-            ':stock'    => 0,
-            ':size'     => 0,
-            ':unit'     => "N/A",
-            ':position' => $position,
+            ':name'        => "N/A",
+            ':size'        => 0,
+            ':unit'        => "N/A",
+            ':best_before' => '',
+            ':stock'       => 0,
+            ':position'    => $position,
         ];
 
         $this->_modifyItem($insertQuery, $params);
@@ -111,24 +112,26 @@ class ItemController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 16.11.2019
      */
     public function updateItem()
     {
         $query  = "
             UPDATE items SET
                 name = :name,
-                stock = :stock,
                 size = :size,
-                unit = :unit
+                unit = :unit,
+                best_before = :best_before,
+                stock = :stock
             WHERE id = :id
         ";
         $params = [
-            ':id'    => $this->_itemId,
-            ':name'  => "N/A",
-            ':stock' => 0,
-            ':size'  => 0,
-            ':unit'  => "N/A",
+            ':id'          => $this->_itemId,
+            ':name'        => "N/A",
+            ':size'        => 0,
+            ':unit'        => "N/A",
+            ':best_before' => '',
+            ':stock'       => 0,
         ];
 
         $this->_modifyItem($query, $params);
@@ -212,13 +215,13 @@ class ItemController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 16.11.2019
      */
     private function _modifyItem(string $query, array $params)
     {
         $json = Helpers::getSanitizedPayload();
 
-        foreach (["name", "stock", "size", "unit"] as $param) {
+        foreach (["name", "size", "unit", "best_before", "stock"] as $param) {
             if (empty($json[$param]) === false) {
                 $params[':'.$param] = $json[$param];
             }
