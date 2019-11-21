@@ -9,13 +9,13 @@
  */
 namespace Rhorber\Inventory\API\V1;
 
-use Rhorber\Inventory\API\Authorization;
+use Rhorber\Inventory\API\AbstractApiController;
 use Rhorber\Inventory\API\Database;
 use Rhorber\Inventory\API\Http;
 
 
 /**
- * Serves incoming API calls. (Version 1)
+ * Serves incoming API calls, Version 1.
  *
  * Request URI structure: `/api/v:version/:entity[/:id[/:action]]`
  *
@@ -23,49 +23,8 @@ use Rhorber\Inventory\API\Http;
  * @author  Raphael Horber
  * @version 21.11.2019
  */
-class ApiController
+class ApiController extends AbstractApiController
 {
-    /**
-     * Full request uri (`$_SERVER['REQUEST_URI']`).
-     *
-     * @access private
-     * @var    string
-     */
-    private $_uri;
-
-    /**
-     * Request method (`$_SERVER['REQUEST_METHOD']`).
-     *
-     * @access private
-     * @var    string
-     */
-    private $_method;
-
-    /**
-     * Request's entity segment.
-     *
-     * @access private
-     * @var    string
-     */
-    private $_entity;
-
-    /**
-     * Request's id segment.
-     *
-     * @access private
-     * @var    string
-     */
-    private $_entityId;
-
-    /**
-     * Request's action segment.
-     *
-     * @access private
-     * @var    string
-     */
-    private $_action;
-
-
     /**
      * Handles the request. Terminates the script execution.
      *
@@ -84,73 +43,23 @@ class ApiController
      *
      * @access  private
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 21.11.2019
      */
     private function __construct()
     {
-        $this->_uri    = $_SERVER['REQUEST_URI'];
-        $this->_method = mb_strtoupper($_SERVER['REQUEST_METHOD']);
+        parent::__construct();
 
-        Http::handleCors($this->_method);
-        Authorization::verifyAuth();
-
-        $this->_validatePrefix();
-        $this->_parseUri();
-
-        if ($this->_entity === "inventory") {
+        if ($this->entity === "inventory") {
             $this->_handleInventoryRequest();
             return;
         }
 
-        if ($this->_entity === "item") {
+        if ($this->entity === "item") {
             $this->_handleItemRequest();
             return;
         }
 
         Http::sendNotFound();
-    }
-
-    /**
-     * Validates the URI prefix (must be "/api/v1/").
-     *
-     * @return  void
-     * @access  private
-     * @author  Raphael Horber
-     * @version 01.12.2018
-     */
-    private function _validatePrefix()
-    {
-        if (mb_substr($this->_uri, 0, 8) !== "/api/v1/") {
-            Http::sendNotFound();
-        }
-    }
-
-    /**
-     * Parses the URI (sets the private segment properties).
-     *
-     * @return  void
-     * @access  private
-     * @author  Raphael Horber
-     * @version 05.04.2019
-     */
-    private function _parseUri()
-    {
-        $uri = mb_substr($this->_uri, 8);
-
-        $pathParts = explode("/", $uri);
-        if (count($pathParts) > 0) {
-            $this->_entity = $pathParts[0];
-        }
-        if (count($pathParts) > 1) {
-            $this->_entityId = $pathParts[1];
-        }
-        if (count($pathParts) > 2) {
-            $this->_action = $pathParts[2];
-        }
-
-        if ($this->_entityId !== null && intval($this->_entityId) === 0) {
-            Http::sendNotFound();
-        }
     }
 
     /**
@@ -161,11 +70,11 @@ class ApiController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 21.11.2019
      */
     private function _handleInventoryRequest()
     {
-        if ($this->_uri !== "/api/v1/inventory") {
+        if ($this->uri !== "/api/v1/inventory") {
             Http::sendNotFound();
         }
 
@@ -195,34 +104,34 @@ class ApiController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 21.11.2019
      */
     private function _handleItemRequest()
     {
         $knownActions = [null, "increment", "decrement", "reset-stock", "move-down", "move-up"];
-        if (in_array($this->_action, $knownActions) === false) {
+        if (in_array($this->action, $knownActions) === false) {
             Http::sendNotFound();
         }
 
-        $controller = new ItemController($this->_entityId);
+        $controller = new ItemController($this->entityId);
 
-        if ($this->_action === "decrement") {
+        if ($this->action === "decrement") {
             $controller->decrementStock();
-        } elseif ($this->_action === "increment") {
+        } elseif ($this->action === "increment") {
             $controller->incrementStock();
-        } elseif ($this->_action === "move-down") {
+        } elseif ($this->action === "move-down") {
             $controller->moveDown();
-        } elseif ($this->_action === "move-up") {
+        } elseif ($this->action === "move-up") {
             $controller->moveUp();
-        } elseif ($this->_action === "reset-stock") {
+        } elseif ($this->action === "reset-stock") {
             $controller->resetStock();
         }
 
-        if ($this->_method === "GET") {
+        if ($this->method === "GET") {
             $controller->returnItem();
-        } elseif ($this->_method === "PUT") {
+        } elseif ($this->method === "PUT") {
             $controller->updateItem();
-        } elseif ($this->_method === "POST") {
+        } elseif ($this->method === "POST") {
             $controller->addItem();
         }
     }
