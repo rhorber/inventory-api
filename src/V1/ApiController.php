@@ -3,11 +3,15 @@
 /**
  * Class ApiController.
  *
- * @package Rhorber\Inventory\API
+ * @package Rhorber\Inventory\API\V1
  * @author  Raphael Horber
- * @version 20.04.2019
+ * @version 21.11.2019
  */
-namespace Rhorber\Inventory\API;
+namespace Rhorber\Inventory\API\V1;
+
+use Rhorber\Inventory\API\Authorization;
+use Rhorber\Inventory\API\Database;
+use Rhorber\Inventory\API\Http;
 
 
 /**
@@ -15,7 +19,7 @@ namespace Rhorber\Inventory\API;
  *
  * Request URI structure: `/api/v:version/:entity[/:id[/:action]]`
  *
- * @package Rhorber\Inventory\API
+ * @package Rhorber\Inventory\API\V1
  * @author  Raphael Horber
  * @version 20.04.2019
  */
