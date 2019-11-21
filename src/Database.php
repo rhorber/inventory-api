@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 30.03.2019
+ * @version 21.11.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 30.03.2019
+ * @version 21.11.2019
  */
 class Database
 {
@@ -120,10 +120,14 @@ class Database
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 30.03.2019
+     * @version 21.11.2019
      */
     private function _logQuery(string $logQuery, array $logValues = [])
     {
+        if (empty($_ENV['DEBUG']) || $_ENV['DEBUG'] !== "true") {
+            return;
+        }
+
         $content = $logQuery;
         if (count($logValues) > 0) {
             $content .= " | ".print_r($logValues, true);

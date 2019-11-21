@@ -3,17 +3,21 @@
 /**
  * Class ItemController.
  *
- * @package Rhorber\Inventory\API
+ * @package Rhorber\Inventory\API\V1
  * @author  Raphael Horber
- * @version 16.11.2019
+ * @version 21.11.2019
  */
-namespace Rhorber\Inventory\API;
+namespace Rhorber\Inventory\API\V1;
+
+use Rhorber\Inventory\API\Database;
+use Rhorber\Inventory\API\Helpers;
+use Rhorber\Inventory\API\Http;
 
 
 /**
  * Class for modifying or adding an item. All methods terminate execution.
  *
- * @package Rhorber\Inventory\API
+ * @package Rhorber\Inventory\API\V1
  * @author  Raphael Horber
  * @version 16.11.2019
  */

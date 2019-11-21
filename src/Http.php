@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 20.04.2019
+ * @version 21.11.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 20.04.2019
+ * @version 21.11.2019
  */
 class Http
 {
@@ -49,14 +49,14 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 21.11.2019
      */
     public static function handleCors(string $method)
     {
-        self::verifyOrigin();
+        self::_verifyOrigin();
 
         if ($method === 'OPTIONS' && empty($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) === false) {
-            self::handlePreflightRequest();
+            self::_handlePreflightRequest();
             return;
         }
 
@@ -104,11 +104,13 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 21.11.2019
      */
     public static function sendBadRequest()
     {
         http_response_code(400);
+
+        self::_logRequest();
         die();
     }
 
@@ -118,11 +120,13 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 21.11.2019
      */
     public static function sendUnauthorized()
     {
         http_response_code(401);
+
+        self::_logRequest();
         die();
     }
 
@@ -132,11 +136,13 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 21.11.2019
      */
     public static function sendForbidden()
     {
         http_response_code(403);
+
+        self::_logRequest();
         die();
     }
 
@@ -146,11 +152,13 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 21.11.2019
      */
     public static function sendNotFound()
     {
         http_response_code(404);
+
+        self::_logRequest();
         die();
     }
 
@@ -160,11 +168,13 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 21.11.2019
      */
     public static function sendMethodNotAllowed()
     {
         http_response_code(405);
+
+        self::_logRequest();
         die();
     }
 
@@ -174,11 +184,13 @@ class Http
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 21.11.2019
      */
     public static function sendServerError()
     {
         http_response_code(500);
+
+        self::_logRequest();
         die();
     }
 
@@ -190,7 +202,7 @@ class Http
      * @author  Raphael Horber
      * @version 20.04.2019
      */
-    private static function verifyOrigin()
+    private static function _verifyOrigin()
     {
         if (empty($_SERVER['HTTP_ORIGIN'])) {
             Http::sendBadRequest();
@@ -210,7 +222,7 @@ class Http
      * @author  Raphael Horber
      * @version 20.04.2019
      */
-    private static function handlePreflightRequest()
+    private static function _handlePreflightRequest()
     {
         if (in_array($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'], self::$allowedMethods) === false) {
             Http::sendMethodNotAllowed();
@@ -232,6 +244,38 @@ class Http
         header('Access-Control-Allow-Origin: '.$_ENV['ALLOWED_ORIGIN']);
         header("Vary: Origin");
         Http::sendNoContent();
+    }
+
+    /**
+     * Logs an invalid/unauthorized request into the database.
+     *
+     * @return  void
+     * @access  private
+     * @author  Raphael Horber
+     * @version 21.11.2019
+     */
+    private static function _logRequest()
+    {
+        $method  = mb_strtoupper($_SERVER['REQUEST_METHOD']);
+        $content = sprintf('"%s %s" %d', $method, $_SERVER['REQUEST_URI'], http_response_code());
+
+        $query  = "
+            INSERT INTO log (
+                type, content, client_name, client_ip, user_agent
+            ) VALUES (
+                :type, :content, :clientName, :clientIp, :userAgent
+            )
+        ";
+        $values = [
+            ':type'       => 'request',
+            ':content'    => $content,
+            ':clientName' => Authorization::getClientName(),
+            ':clientIp'   => $_SERVER['REMOTE_ADDR'],
+            ':userAgent'  => $_SERVER['HTTP_USER_AGENT'],
+        ];
+
+        $database = new Database();
+        $database->prepareAndExecute($query, $values, false);
     }
 
     /**
