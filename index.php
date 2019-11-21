@@ -18,5 +18,8 @@ Helpers::validateEnvVariables();
 
 RequestDispatcher::dispatchRequest();
 
+// Just in case.
+Http::sendNotFound();
+
 
 // Útƒ-8 encoded

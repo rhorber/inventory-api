@@ -21,7 +21,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V1
  * @author  Raphael Horber
- * @version 20.04.2019
+ * @version 21.11.2019
  */
 class ApiController
 {
@@ -91,8 +91,6 @@ class ApiController
         $this->_uri    = $_SERVER['REQUEST_URI'];
         $this->_method = mb_strtoupper($_SERVER['REQUEST_METHOD']);
 
-        $this->_logRequest();
-
         Http::handleCors($this->_method);
         Authorization::verifyAuth();
 
@@ -110,35 +108,6 @@ class ApiController
         }
 
         Http::sendNotFound();
-    }
-
-    /**
-     * Logs a request into the database.
-     *
-     * @return  void
-     * @access  private
-     * @author  Raphael Horber
-     * @version 30.03.2019
-     */
-    private function _logRequest()
-    {
-        $query  = "
-            INSERT INTO log (
-                type, content, client_name, client_ip, user_agent
-            ) VALUES (
-                :type, :content, :clientName, :clientIp, :userAgent
-            )
-        ";
-        $values = [
-            ':type'       => 'request',
-            ':content'    => $this->_method." | ".$this->_uri,
-            ':clientName' => Authorization::getClientName(),
-            ':clientIp'   => $_SERVER['REMOTE_ADDR'],
-            ':userAgent'  => $_SERVER['HTTP_USER_AGENT'],
-        ];
-
-        $database = new Database();
-        $database->prepareAndExecute($query, $values, false);
     }
 
     /**
