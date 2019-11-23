@@ -106,8 +106,7 @@ class ApiController extends AbstractApiController
      * - "PUT  .../categories/:id/move-down"
      * - "PUT  .../categories/:id/move-up"
      *
-     * If the request is valid and not a preflight,
-     * the database operation will be delegated to {@link CategoriesController}.
+     * If the request is valid the database operation will be delegated to {@link CategoriesController}.
      *
      * @return  void
      * @access  private
@@ -116,13 +115,31 @@ class ApiController extends AbstractApiController
      */
     private function _handleCategoriesRequest()
     {
-        $knownActions = [null, "articles", "move-down", "move-up"];
-        if (in_array($this->action, $knownActions) === false) {
-            Http::sendNotFound();
+        $controller = new CategoriesController();
+
+        if ($this->method === "GET") {
+            if ($this->action === null) {
+                if ($this->entityId !== null) {
+                    $controller->returnCategory($this->entityId);
+                } else {
+                    $controller->returnAllCategories();
+                }
+            } elseif ($this->action === "articles") {
+                $controller->returnArticles($this->entityId);
+            }
+        } elseif ($this->method === "POST") {
+            $controller->createCategory();
+        } elseif ($this->method === "PUT") {
+            if ($this->action === null) {
+                $controller->updateCategory($this->entityId);
+            } elseif ($this->action === "move-down") {
+                $controller->moveDown($this->entityId);
+            } elseif ($this->action === "move-up") {
+                $controller->moveUp($this->entityId);
+            }
         }
 
-        http_response_code(501);
-        die();
+        Http::sendNotFound();
     }
 }
 
