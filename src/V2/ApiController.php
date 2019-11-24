@@ -75,8 +75,7 @@ class ApiController extends AbstractApiController
      * - "PUT  .../articles/:id/move-up"
      * - "PUT  .../articles/:id/reset"
      *
-     * If the request is valid and not a preflight,
-     * the database operation will be delegated to {@link ArticlesController}.
+     * If the request is valid the database operation will be delegated to {@link ArticlesController}.
      *
      * @return  void
      * @access  private
@@ -85,13 +84,33 @@ class ApiController extends AbstractApiController
      */
     private function _handleArticlesRequest()
     {
-        $knownActions = [null, "decrement", "increment", "move-down", "move-up", "reset"];
-        if (in_array($this->action, $knownActions) === false) {
-            Http::sendNotFound();
+        $controller = new ArticlesController();
+
+        if ($this->method === "GET" && $this->action === null) {
+            if ($this->entityId !== null) {
+                $controller->returnArticle($this->entityId);
+            } else {
+                $controller->returnAllArticles();
+            }
+        } elseif ($this->method === "POST") {
+            $controller->createArticle();
+        } elseif ($this->method === "PUT") {
+            if ($this->action === null) {
+                $controller->updateArticle($this->entityId);
+            } elseif ($this->action === "decrement") {
+                $controller->decrementStock($this->entityId);
+            } elseif ($this->action === "increment") {
+                $controller->incrementStock($this->entityId);
+            } elseif ($this->action === "move-down") {
+                $controller->moveDown($this->entityId);
+            } elseif ($this->action === "move-up") {
+                $controller->moveUp($this->entityId);
+            } elseif ($this->action === "reset") {
+                $controller->resetArticle($this->entityId);
+            }
         }
 
-        http_response_code(501);
-        die();
+        Http::sendNotFound();
     }
 
     /**
