@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 21.11.2019
+ * @version 23.11.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 21.11.2019
+ * @version 23.11.2019
  */
 class Database
 {
@@ -67,6 +67,27 @@ class Database
     }
 
     /**
+     * Prepares the passed query and returns its statement.
+     *
+     * @param string  $query    Query to prepare.
+     * @param boolean $logQuery Whether to log the query or not (default: true).
+     *
+     * @return  \PDOStatement Prepared statement
+     * @access  public
+     * @author  Raphael Horber
+     * @version 23.11.2019
+     */
+    public function prepare(string $query, bool $logQuery = true): \PDOStatement
+    {
+        if ($logQuery === true) {
+            $this->_logQuery($query, ["PREPARE"]);
+        }
+
+        $statement = $this->_pdo->prepare($query);
+        return $statement;
+    }
+
+    /**
      * Executes the passed query (as prepared statement) and returns its result.
      *
      * @param string  $query      Query to execute.
@@ -76,7 +97,7 @@ class Database
      * @return  \PDOStatement Query's result as PDOStatement
      * @access  public
      * @author  Raphael Horber
-     * @version 09.12.2018
+     * @version 23.11.2019
      */
     public function prepareAndExecute(string $query, array $parameters, bool $logQuery = true): \PDOStatement
     {
@@ -84,12 +105,10 @@ class Database
             $this->_logQuery($query, $parameters);
         }
 
+        // Using PDO directly prevents another log entry.
         $statement = $this->_pdo->prepare($query);
-        foreach ($parameters as $parameter => $value) {
-            $statement->bindValue($parameter, $value);
-        }
+        $statement->execute($parameters);
 
-        $statement->execute();
         return $statement;
     }
 

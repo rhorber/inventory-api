@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 21.11.2019
+ * @version 23.11.2019
  */
 namespace Rhorber\Inventory\API;
 
@@ -18,7 +18,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 21.11.2019
+ * @version 23.11.2019
  */
 abstract class AbstractApiController
 {
@@ -42,7 +42,7 @@ abstract class AbstractApiController
      * Request's entity segment.
      *
      * @access protected
-     * @var    string
+     * @var    string|null
      */
     protected $entity;
 
@@ -50,7 +50,7 @@ abstract class AbstractApiController
      * Request's id segment.
      *
      * @access protected
-     * @var    string
+     * @var    integer|null
      */
     protected $entityId;
 
@@ -58,7 +58,7 @@ abstract class AbstractApiController
      * Request's action segment.
      *
      * @access protected
-     * @var    string
+     * @var    string|null
      */
     protected $action;
 
