@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 29.11.2019
+ * @version 30.11.2019
  */
 namespace Rhorber\Inventory\API\V2;
 
@@ -19,7 +19,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 29.11.2019
+ * @version 30.11.2019
  */
 class CategoriesController
 {
@@ -206,7 +206,7 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 29.11.2019
+     * @version 30.11.2019
      */
     private function _moveCategory(int $categoryId, string $direction)
     {
@@ -243,13 +243,13 @@ class CategoriesController
         ];
         $this->_database->prepareAndExecute($moveThisQuery, $moveThisParams);
 
-        $categoriesQuery     = "
+        $responseQuery     = "
             SELECT *
             FROM categories
             WHERE position IN(:thisPosition, :otherPosition)
         ";
-        $categoriesStatement = $this->_database->prepareAndExecute($categoriesQuery, $positionParams);
-        $categories          = $categoriesStatement->fetchAll();
+        $responseStatement = $this->_database->prepareAndExecute($responseQuery, $positionParams);
+        $categories        = $responseStatement->fetchAll();
 
         $response = ['categories' => $categories];
         Http::sendJsonResponse($response);
