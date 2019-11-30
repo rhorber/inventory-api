@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 30.11.2019
  */
 namespace Rhorber\Inventory\API\V2;
 
@@ -19,7 +19,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V1
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 30.11.2019
  */
 class ArticlesController
 {
@@ -217,7 +217,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 30.11.2019
      */
     public function resetArticle(int $articleId)
     {
@@ -232,7 +232,7 @@ class ArticlesController
         ];
 
         $this->_database->prepareAndExecute($moveQuery, $moveParams);
-        Http::sendNoContent();
+        $this->returnArticle($articleId);
     }
 
     /**
@@ -297,7 +297,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 30.11.2019
      */
     private function _modifyStock(int $articleId, string $newStock)
     {
@@ -305,7 +305,7 @@ class ArticlesController
         $params = [':id' => $articleId];
 
         $this->_database->prepareAndExecute($query, $params);
-        Http::sendNoContent();
+        $this->returnArticle($articleId);
     }
 
     /**
@@ -320,7 +320,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 30.11.2019
      */
     private function _moveItem(int $articleId, string $compareOperator, string $sortDirection)
     {
@@ -334,7 +334,6 @@ class ArticlesController
         $thisStatement = $this->_database->prepareAndExecute($queryThisQuery, $queryThisParams);
         $thisArticle   = $thisStatement->fetch();
 
-        // other direction: position > :position, order by position asc
         $queryOtherQuery  = "
             SELECT id, position
             FROM articles
@@ -370,7 +369,20 @@ class ArticlesController
         ];
         $moveStatement->execute($moveOtherParams);
 
-        Http::sendNoContent();
+        $responseQuery     = "
+            SELECT *
+            FROM articles
+            WHERE id IN(:thisId, :otherId)
+        ";
+        $responseParams    = [
+            ':thisId'  => $articleId,
+            ':otherId' => $otherArticle['id'],
+        ];
+        $responseStatement = $this->_database->prepareAndExecute($responseQuery, $responseParams);
+        $articles          = $responseStatement->fetchAll();
+
+        $response = ['articles' => $articles];
+        Http::sendJsonResponse($response);
     }
 }
 
