@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 30.11.2019
  */
 namespace Rhorber\Inventory\API\V2;
 
@@ -19,7 +19,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 30.11.2019
  */
 class CategoriesController
 {
@@ -175,11 +175,11 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 29.11.2019
      */
     public function moveDown(int $categoryId)
     {
-        $this->_moveCategory($categoryId, "+", "-");
+        $this->_moveCategory($categoryId, "+");
     }
 
     /**
@@ -190,50 +190,69 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 29.11.2019
      */
     public function moveUp(int $categoryId)
     {
-        $this->_moveCategory($categoryId, "-", "+");
+        $this->_moveCategory($categoryId, "-");
     }
 
     /**
      * Moves the category one position up or down.
      *
-     * @param integer $categoryId     ID of the category to move.
-     * @param string  $thisDirection  Direction of this category ("+" or "-" for down or up respectively).
-     * @param string  $otherDirection Direction of the other category ("-" or "+" for down or up respectively).
+     * @param integer $categoryId ID of the category to move.
+     * @param string  $direction  Direction of this category ("+" or "-" for down or up respectively).
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 30.11.2019
      */
-    private function _moveCategory(int $categoryId, string $thisDirection, string $otherDirection)
+    private function _moveCategory(int $categoryId, string $direction)
     {
-        $query  = "SELECT position FROM categories WHERE id = :id";
-        $params = [':id' => $categoryId];
+        $positionQuery  = "SELECT position FROM categories WHERE id = :id";
+        $positionParams = [':id' => $categoryId];
 
-        $statement    = $this->_database->prepareAndExecute($query, $params);
-        $thisCategory = $statement->fetch();
-        $position     = $thisCategory['position'];
+        $positionStatement = $this->_database->prepareAndExecute($positionQuery, $positionParams);
+        $thisCategory      = $positionStatement->fetch();
 
-        $moveOther   = "
+        // Calculate the positions.
+        // `eval` can safely be used because `$direction` comes from a trusted source.
+        $thisPosition   = $thisCategory['position'];
+        $otherPosition  = eval("return ".$thisPosition." ".$direction." 1;");
+        $positionParams = [
+            ':thisPosition'  => $thisPosition,
+            ':otherPosition' => $otherPosition,
+        ];
+
+        $moveOtherQuery = "
             UPDATE categories SET
-                position = position ".$otherDirection." 1
-            WHERE position = :position ".$thisDirection." 1
+                position = :thisPosition
+            WHERE position = :otherPosition
         ";
-        $paramsOther = [':position' => $position];
-        $this->_database->prepareAndExecute($moveOther, $paramsOther);
+        $this->_database->prepareAndExecute($moveOtherQuery, $positionParams);
 
-        $moveThis = "
+        $moveThisQuery  = "
             UPDATE categories SET
-                position = position ".$thisDirection." 1
+                position = :otherPosition
             WHERE id = :id
         ";
-        $this->_database->prepareAndExecute($moveThis, $params);
+        $moveThisParams = [
+            ':id'            => $categoryId,
+            ':otherPosition' => $otherPosition,
+        ];
+        $this->_database->prepareAndExecute($moveThisQuery, $moveThisParams);
 
-        Http::sendNoContent();
+        $responseQuery     = "
+            SELECT *
+            FROM categories
+            WHERE position IN(:thisPosition, :otherPosition)
+        ";
+        $responseStatement = $this->_database->prepareAndExecute($responseQuery, $positionParams);
+        $categories        = $responseStatement->fetchAll();
+
+        $response = ['categories' => $categories];
+        Http::sendJsonResponse($response);
     }
 }
 
