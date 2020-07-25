@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 05.04.2019
+ * @version 25.07.2020
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 05.04.2019
+ * @version 25.07.2020
  */
 class Helpers
 {
@@ -95,17 +95,17 @@ class Helpers
     /**
      * Decodes the request's payload, sanitizes it, and returns it.
      *
-     * @return  array
+     * @return  array|null
      * @access  public
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 25.07.2020
      */
-    public static function getSanitizedPayload(): array
+    public static function getSanitizedPayload(): ?array
     {
         $payload = file_get_contents("php://input");
         $json    = json_decode($payload, true);
 
-        if ($json !== false) {
+        if ($json !== false && $json !== null) {
             $json = self::_sanitizeArray($json);
         }
 
