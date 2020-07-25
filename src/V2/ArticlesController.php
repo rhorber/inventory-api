@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 30.11.2019
+ * @version 25.07.2020
  */
 namespace Rhorber\Inventory\API\V2;
 
@@ -17,9 +17,14 @@ use Rhorber\Inventory\API\Http;
 /**
  * Class for modifying or adding an article. All methods terminate execution.
  *
+ * To keep it simple (circumvent conversions) and provide compatibility between ECMAScript, PostgreSQL and MySQL
+ * the following design decisions were made:
+ * - The current timestamp (last update) of an article is stored as an integer (in seconds).
+ * - PHP provides/sets the update values.
+ *
  * @package Rhorber\Inventory\API\V1
  * @author  Raphael Horber
- * @version 30.11.2019
+ * @version 25.07.2020
  */
 class ArticlesController
 {
@@ -88,18 +93,24 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 25.07.2020
      */
     public function createArticle()
     {
         $payload  = Helpers::getSanitizedPayload();
         $position = $this->_getNextPositionInCategory($payload['category']);
 
+        if (isset($payload['timestamp'])) {
+            $timestamp = $payload['timestamp'];
+        } else {
+            $timestamp = time();
+        }
+
         $insertQuery  = "
             INSERT INTO articles (
-                category, name, size, unit, best_before, stock, position
+                category, name, size, unit, best_before, stock, position, timestamp
             ) VALUES (
-                :category, :name, :size, :unit, :best_before, :stock, :position
+                :category, :name, :size, :unit, :best_before, :stock, :position, :timestamp
             )
         ";
         $insertParams = [
@@ -110,6 +121,7 @@ class ArticlesController
             ':best_before' => $payload['best_before'],
             ':stock'       => $payload['stock'],
             ':position'    => $position,
+            ':timestamp'   => $timestamp,
         ];
 
         $this->_database->prepareAndExecute($insertQuery, $insertParams);
@@ -124,18 +136,23 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 25.07.2020
      */
     public function updateArticle(int $articleId)
     {
         $payload = Helpers::getSanitizedPayload();
 
-        $categoryQuery  = "SELECT category FROM articles WHERE id = :id";
-        $categoryParams = [':id' => $articleId];
+        $currentQuery  = "SELECT category, timestamp FROM articles WHERE id = :id";
+        $currentParams = [':id' => $articleId];
 
-        $categoryStatement = $this->_database->prepareAndExecute($categoryQuery, $categoryParams);
-        $categoryRow       = $categoryStatement->fetch();
-        $currentCategory   = $categoryRow['category'];
+        $currentStatement = $this->_database->prepareAndExecute($currentQuery, $currentParams);
+        $currentRow       = $currentStatement->fetch();
+        $currentCategory  = $currentRow['category'];
+        $currentTimestamp = $currentRow['timestamp'];
+
+        if (isset($payload['timestamp']) && $payload['timestamp'] < $currentTimestamp) {
+            Http::sendNoContent();
+        }
 
         if ($currentCategory != $payload['category']) {
             $category = $payload['category'];
@@ -162,7 +179,8 @@ class ArticlesController
                 size = :size,
                 unit = :unit,
                 best_before = :best_before,
-                stock = :stock
+                stock = :stock,
+                timestamp = :timestamp
             WHERE id = :id
         ";
         $updateParams = [
@@ -172,6 +190,7 @@ class ArticlesController
             ':unit'        => $payload['unit'],
             ':best_before' => $payload['best_before'],
             ':stock'       => $payload['stock'],
+            ':timestamp'   => time(),
         ];
 
         $this->_database->prepareAndExecute($updateQuery, $updateParams);
@@ -217,21 +236,31 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 30.11.2019
+     * @version 25.07.2020
      */
     public function resetArticle(int $articleId)
     {
-        $moveQuery  = "
+        $payload = Helpers::getSanitizedPayload();
+
+        $query  = "
             UPDATE articles SET
                 stock = 0,
-                best_before = ''
+                best_before = '',
+                timestamp = :timestamp
             WHERE id = :id
         ";
-        $moveParams = [
-            ':id' => $articleId,
+        $params = [
+            ':id'        => $articleId,
+            ':timestamp' => time(),
         ];
 
-        $this->_database->prepareAndExecute($moveQuery, $moveParams);
+        if (isset($payload['timestamp'])) {
+            $query .= ' AND timestamp < :timestamp';
+
+            $params[':timestamp'] = $payload['timestamp'];
+        }
+
+        $this->_database->prepareAndExecute($query, $params);
         $this->returnArticle($articleId);
     }
 
@@ -297,12 +326,20 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 30.11.2019
+     * @version 25.07.2020
      */
     private function _modifyStock(int $articleId, string $newStock)
     {
-        $query  = "UPDATE articles SET stock = ".$newStock." WHERE id = :id";
-        $params = [':id' => $articleId];
+        $query  = "
+            UPDATE articles SET
+                stock = ".$newStock.",
+                timestamp = :timestamp
+            WHERE id = :id
+        ";
+        $params = [
+            ':id'        => $articleId,
+            ':timestamp' => time(),
+        ];
 
         $this->_database->prepareAndExecute($query, $params);
         $this->returnArticle($articleId);
@@ -320,7 +357,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 30.11.2019
+     * @version 25.07.2020
      */
     private function _moveItem(int $articleId, string $compareOperator, string $sortDirection)
     {
@@ -350,24 +387,33 @@ class ArticlesController
         $otherStatement = $this->_database->prepareAndExecute($queryOtherQuery, $queryOtherParams);
         $otherArticle   = $otherStatement->fetch();
 
-        $moveQuery     = "
+        $moveThisQuery     = "
+            UPDATE articles SET
+                position = :position,
+                timestamp = :timestamp
+            WHERE id = :id
+        ";
+        $moveThisStatement = $this->_database->prepare($moveThisQuery);
+
+        $moveThisParams = [
+            ':id'        => $articleId,
+            ':position'  => $otherArticle['position'],
+            ':timestamp' => time(),
+        ];
+        $moveThisStatement->execute($moveThisParams);
+
+        $moveOtherQuery     = "
             UPDATE articles SET
                 position = :position
             WHERE id = :id
         ";
-        $moveStatement = $this->_database->prepare($moveQuery);
-
-        $moveThisParams = [
-            ':id'       => $articleId,
-            ':position' => $otherArticle['position'],
-        ];
-        $moveStatement->execute($moveThisParams);
+        $moveOtherStatement = $this->_database->prepare($moveOtherQuery);
 
         $moveOtherParams = [
             ':id'       => $otherArticle['id'],
             ':position' => $thisArticle['position'],
         ];
-        $moveStatement->execute($moveOtherParams);
+        $moveOtherStatement->execute($moveOtherParams);
 
         $responseQuery     = "
             SELECT *
