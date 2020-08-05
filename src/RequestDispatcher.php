@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 04.08.2020
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 04.08.2020
  */
 class RequestDispatcher
 {
@@ -39,7 +39,7 @@ class RequestDispatcher
      *
      * @access  private
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 04.08.2020
      */
     private function __construct()
     {
@@ -49,6 +49,8 @@ class RequestDispatcher
             V1\ApiController::handleRequest();
         } else if ($prefix === "/api/v2/") {
             V2\ApiController::handleRequest();
+        } else if ($prefix === "/api/v3/") {
+            V3\ApiController::handleRequest();
         }
 
         Http::sendNotFound();

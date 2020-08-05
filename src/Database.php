@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 04.08.2020
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 04.08.2020
  */
 class Database
 {
@@ -110,6 +110,29 @@ class Database
         $statement->execute($parameters);
 
         return $statement;
+    }
+
+    /**
+     * Executes the passed prepared statement and returns its result.
+     *
+     * @param \PDOStatement  $statement      Statement to execute.
+     * @param array   $parameters Parameters to bind.
+     * @param boolean $logQuery   Whether to log the query or not (default: true).
+     *
+     * @return  array[] The result rows as associative arrays.
+     * @access  public
+     * @author  Raphael Horber
+     * @version 04.08.2020
+     */
+    public function executeAndFetchAll(\PDOStatement $statement, array $parameters, bool $logQuery = true): array
+    {
+        if ($logQuery === true) {
+            $this->_logQuery($statement->queryString, $parameters);
+        }
+
+        $statement->execute($parameters);
+
+        return $statement->fetchAll();
     }
 
     /**
