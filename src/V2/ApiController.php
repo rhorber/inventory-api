@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 04.08.2020
  */
 namespace Rhorber\Inventory\API\V2;
 
@@ -18,7 +18,7 @@ use Rhorber\Inventory\API\Http;
  *
  * Request URI structure: `/api/v:version/:entity[/:id[/:action]]`
  *
- * @package Rhorber\Inventory\API
+ * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
  * @version 23.11.2019
  */

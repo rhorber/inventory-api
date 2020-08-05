@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 25.07.2020
+ * @version 04.08.2020
  */
 namespace Rhorber\Inventory\API\V2;
 
@@ -22,9 +22,9 @@ use Rhorber\Inventory\API\Http;
  * - The current timestamp (last update) of an article is stored as an integer (in seconds).
  * - PHP provides/sets the update values.
  *
- * @package Rhorber\Inventory\API\V1
+ * @package Rhorber\Inventory\API\V2
  * @author  Raphael Horber
- * @version 25.07.2020
+ * @version 04.08.2020
  */
 class ArticlesController
 {
@@ -349,9 +349,9 @@ class ArticlesController
      * Moves the article one position up or down.
      *
      * @param integer $articleId       ID of the article to move.
-     * @param string  $compareOperator Comparator to use to find the other article to swap with
+     * @param string  $compareOperator Comparator used to find the other article to swap with
      *                                 (">" or "<" for down or up respectively).
-     * @param string  $sortDirection   Sort direction to use to find the other article to swap with
+     * @param string  $sortDirection   Sort direction used to find the other article to swap with
      *                                 ("ASC" or "DESC" for down or up respectively).
      *
      * @return  void
