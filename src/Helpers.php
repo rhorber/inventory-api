@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 25.07.2020
+ * @version 20.08.2020
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 25.07.2020
+ * @version 20.08.2020
  */
 class Helpers
 {
@@ -120,12 +120,12 @@ class Helpers
      * @return  array
      * @access  private
      * @author  Raphael Horber
-     * @version 01.12.2018
+     * @version 20.08.2020
      */
     private static function _sanitizeArray(array $array): array
     {
         foreach ($array as $key => $value) {
-            if ($value instanceof \Traversable) {
+            if (is_array($value) === true || $value instanceof \Traversable) {
                 $array[$key] = self::_sanitizeArray($value);
             } else {
                 $array[$key] = filter_var($value, FILTER_SANITIZE_STRING);
