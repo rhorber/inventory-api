@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 04.08.2020
+ * @version 20.08.2020
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 04.08.2020
+ * @version 20.08.2020
  */
 class Database
 {
@@ -136,10 +136,23 @@ class Database
     }
 
     /**
+     * Returns the ID of the last inserted row (wrapper of PDO::lastInsertId).
+     *
+     * @return  string ID of the last inserted row.
+     * @access  public
+     * @author  Raphael Horber
+     * @version 20.08.2020
+     */
+    public function lastInsertId(): string
+    {
+        return $this->_pdo->lastInsertId();
+    }
+
+    /**
      * Validates if the necessary env variables exist, if not sends a 500 response.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 01.12.2018
      */
@@ -160,7 +173,7 @@ class Database
      * @param array  $logValues Values to log.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 21.11.2019
      */
