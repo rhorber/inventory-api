@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 20.08.2020
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 20.08.2020
  */
 class Database
 {
@@ -113,10 +113,46 @@ class Database
     }
 
     /**
+     * Executes the passed prepared statement and returns its result.
+     *
+     * @param \PDOStatement  $statement      Statement to execute.
+     * @param array   $parameters Parameters to bind.
+     * @param boolean $logQuery   Whether to log the query or not (default: true).
+     *
+     * @return  array[] The result rows as associative arrays.
+     * @access  public
+     * @author  Raphael Horber
+     * @version 04.08.2020
+     */
+    public function executeAndFetchAll(\PDOStatement $statement, array $parameters, bool $logQuery = true): array
+    {
+        if ($logQuery === true) {
+            $this->_logQuery($statement->queryString, $parameters);
+        }
+
+        $statement->execute($parameters);
+
+        return $statement->fetchAll();
+    }
+
+    /**
+     * Returns the ID of the last inserted row (wrapper of PDO::lastInsertId).
+     *
+     * @return  string ID of the last inserted row.
+     * @access  public
+     * @author  Raphael Horber
+     * @version 20.08.2020
+     */
+    public function lastInsertId(): string
+    {
+        return $this->_pdo->lastInsertId();
+    }
+
+    /**
      * Validates if the necessary env variables exist, if not sends a 500 response.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 01.12.2018
      */
@@ -137,7 +173,7 @@ class Database
      * @param array  $logValues Values to log.
      *
      * @return  void
-     * @access  public
+     * @access  private
      * @author  Raphael Horber
      * @version 21.11.2019
      */

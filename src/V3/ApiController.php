@@ -3,24 +3,24 @@
 /**
  * Class ApiController.
  *
- * @package Rhorber\Inventory\API\V2
+ * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.08.2020
+ * @version 05.08.2020
  */
-namespace Rhorber\Inventory\API\V2;
+namespace Rhorber\Inventory\API\V3;
 
 use Rhorber\Inventory\API\AbstractApiController;
 use Rhorber\Inventory\API\Http;
 
 
 /**
- * Serves incoming API calls. (Version 2)
+ * Serves incoming API calls. (Version 3)
  *
  * Request URI structure: `/api/v:version/:entity[/:id[/:action]]`
  *
- * @package Rhorber\Inventory\API\V2
+ * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 23.11.2019
+ * @version 05.08.2020
  */
 class ApiController extends AbstractApiController
 {
@@ -30,7 +30,7 @@ class ApiController extends AbstractApiController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 05.08.2020
      */
     public static function handleRequest()
     {
@@ -42,7 +42,7 @@ class ApiController extends AbstractApiController
      *
      * @access  private
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 05.08.2020
      */
     private function __construct()
     {
@@ -58,19 +58,22 @@ class ApiController extends AbstractApiController
             return;
         }
 
+        if ($this->entity === "lots") {
+            $this->_handleLotsRequest();
+            return;
+        }
+
         Http::sendNotFound();
     }
 
     /**
-     * Handles requests to "/api/v2/articles/...".
+     * Handles requests to "/api/v3/articles/...".
      *
      * Valid requests:
      * - "GET  .../articles"
      * - "GET  .../articles/:id"
      * - "PUT  .../articles/:id"
      * - "POST .../articles"
-     * - "PUT  .../articles/:id/decrement"
-     * - "PUT  .../articles/:id/increment"
      * - "PUT  .../articles/:id/move-down"
      * - "PUT  .../articles/:id/move-up"
      * - "PUT  .../articles/:id/reset"
@@ -80,7 +83,7 @@ class ApiController extends AbstractApiController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 05.08.2020
      */
     private function _handleArticlesRequest()
     {
@@ -97,10 +100,6 @@ class ApiController extends AbstractApiController
         } elseif ($this->method === "PUT") {
             if ($this->action === null) {
                 $controller->updateArticle($this->entityId);
-            } elseif ($this->action === "decrement") {
-                $controller->decrementStock($this->entityId);
-            } elseif ($this->action === "increment") {
-                $controller->incrementStock($this->entityId);
             } elseif ($this->action === "move-down") {
                 $controller->moveDown($this->entityId);
             } elseif ($this->action === "move-up") {
@@ -114,7 +113,7 @@ class ApiController extends AbstractApiController
     }
 
     /**
-     * Handles requests to "/api/v2/categories/...".
+     * Handles requests to "/api/v3/categories/...".
      *
      * Valid requests:
      * - "GET  .../categories"
@@ -130,7 +129,7 @@ class ApiController extends AbstractApiController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 23.11.2019
+     * @version 05.08.2020
      */
     private function _handleCategoriesRequest()
     {
@@ -151,6 +150,47 @@ class ApiController extends AbstractApiController
         } elseif ($this->method === "PUT") {
             if ($this->action === null) {
                 $controller->updateCategory($this->entityId);
+            } elseif ($this->action === "move-down") {
+                $controller->moveDown($this->entityId);
+            } elseif ($this->action === "move-up") {
+                $controller->moveUp($this->entityId);
+            }
+        }
+
+        Http::sendNotFound();
+    }
+
+    /**
+     * Handles requests to "/api/v3/lots/...".
+     *
+     * Valid requests:
+     * - "PUT  .../lots/:id"
+     * - "POST .../lots"
+     * - "PUT  .../lots/:id/decrement"
+     * - "PUT  .../lots/:id/increment"
+     * - "PUT  .../lots/:id/move-down"
+     * - "PUT  .../lots/:id/move-up"
+     *
+     * If the request is valid the database operation will be delegated to {@link LotsController}.
+     *
+     * @return  void
+     * @access  private
+     * @author  Raphael Horber
+     * @version 05.08.2020
+     */
+    private function _handleLotsRequest()
+    {
+        $controller = new LotsController();
+
+        if ($this->method === "POST") {
+            $controller->createLot();
+        } elseif ($this->method === "PUT") {
+            if ($this->action === null) {
+                $controller->updateLot($this->entityId);
+            } elseif ($this->action === "decrement") {
+                $controller->decrementStock($this->entityId);
+            } elseif ($this->action === "increment") {
+                $controller->incrementStock($this->entityId);
             } elseif ($this->action === "move-down") {
                 $controller->moveDown($this->entityId);
             } elseif ($this->action === "move-up") {
