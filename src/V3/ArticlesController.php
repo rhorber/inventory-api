@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 05.08.2020
+ * @version 20.08.2020
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -24,7 +24,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 05.08.2020
+ * @version 20.08.2020
  */
 class ArticlesController
 {
@@ -85,19 +85,11 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 20.08.2020
      */
     public function returnArticle(int $articleId)
     {
-        $params = [':id' => $articleId];
-
-        $articleQuery     = "SELECT * FROM articles WHERE id = :id";
-        $articleStatement = $this->_database->prepareAndExecute($articleQuery, $params);
-        $article          = $articleStatement->fetch();
-
-        $lotsQuery       = "SELECT * FROM lots WHERE article = :id";
-        $lotsStatement   = $this->_database->prepareAndExecute($lotsQuery, $params);
-        $article['lots'] = $lotsStatement->fetchAll();
+        $article = $this->_getArticle($articleId);
 
         Http::sendJsonResponse($article);
     }
@@ -132,8 +124,36 @@ class ArticlesController
             ':position'  => $position,
             ':timestamp' => $timestamp,
         ];
-
         $this->_database->prepareAndExecute($insertQuery, $insertParams);
+
+        $articleId = $this->_database->lastInsertId();
+
+        if (isset($payload['lots'])) {
+            $insertLotQuery     = "
+                INSERT INTO lots (
+                    article, best_before, stock, position, timestamp
+                ) VALUES (
+                    :article, :best_before, :stock, :position, :timestamp
+                )
+            ";
+            $insertLotStatement = $this->_database->prepare($insertLotQuery);
+
+            $lotPosition = 0;
+            foreach ($payload['lots'] as $lot) {
+                $lotPosition++;
+                $lotTimestamp = $lot['timestamp'] ?? time();
+
+                $insertLotParams = [
+                    ':article'     => $articleId,
+                    ':best_before' => $lot['best_before'],
+                    ':stock'       => $lot['stock'],
+                    ':position'    => $lotPosition,
+                    ':timestamp'   => $lotTimestamp,
+                ];
+                $insertLotStatement->execute($insertLotParams);
+            }
+        }
+
         Http::sendNoContent();
     }
 
@@ -301,6 +321,31 @@ class ArticlesController
     }
 
     /**
+     * Returns the article with its lots.
+     *
+     * @param integer $articleId       ID of the article to return.
+     *
+     * @return  array Article row with an additional index `lots` containing its lots.
+     * @access  private
+     * @author  Raphael Horber
+     * @version 20.08.2020
+     */
+    private function _getArticle(int $articleId): array
+    {
+        $params = [':id' => $articleId];
+
+        $articleQuery     = "SELECT * FROM articles WHERE id = :id";
+        $articleStatement = $this->_database->prepareAndExecute($articleQuery, $params);
+        $article          = $articleStatement->fetch();
+
+        $lotsQuery       = "SELECT * FROM lots WHERE article = :id";
+        $lotsStatement   = $this->_database->prepareAndExecute($lotsQuery, $params);
+        $article['lots'] = $lotsStatement->fetchAll();
+
+        return $article;
+    }
+
+    /**
      * Gets the next position (MAX + 1) in the category.
      *
      * @param integer $categoryId ID of the category to get the position from.
@@ -337,7 +382,7 @@ class ArticlesController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 20.08.2020
      */
     private function _moveArticle(int $articleId, string $compareOperator, string $sortDirection)
     {
@@ -395,17 +440,10 @@ class ArticlesController
         ];
         $moveOtherStatement->execute($moveOtherParams);
 
-        $responseQuery     = "
-            SELECT *
-            FROM articles
-            WHERE id IN(:thisId, :otherId)
-        ";
-        $responseParams    = [
-            ':thisId'  => $articleId,
-            ':otherId' => $otherArticle['id'],
+        $articles = [
+            $this->_getArticle($articleId),
+            $this->_getArticle($otherArticle['id']),
         ];
-        $responseStatement = $this->_database->prepareAndExecute($responseQuery, $responseParams);
-        $articles          = $responseStatement->fetchAll();
 
         $response = ['articles' => $articles];
         Http::sendJsonResponse($response);
