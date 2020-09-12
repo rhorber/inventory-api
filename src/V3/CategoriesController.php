@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 05.08.2020
+ * @version 04.09.2020
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -19,7 +19,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 05.08.2020
+ * @version 04.09.2020
  */
 class CategoriesController
 {
@@ -161,7 +161,7 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.09.2020
      */
     public function updateCategory(int $categoryId)
     {
@@ -174,9 +174,12 @@ class CategoriesController
             $currentStatement = $this->_database->prepareAndExecute($currentQuery, $currentParams);
             $currentTimestamp = $currentStatement->fetchColumn(0);
 
-            if ($payload['timestamp'] < $currentTimestamp) {
+            $timestamp = $payload['timestamp'];
+            if ($timestamp < $currentTimestamp) {
                 Http::sendNoContent();
             }
+        } else {
+            $timestamp = time();
         }
 
         $updateQuery  = "
@@ -188,7 +191,7 @@ class CategoriesController
         $updateParams = [
             ':id'        => $categoryId,
             ':name'      => $payload['name'],
-            ':timestamp' => time(),
+            ':timestamp' => $timestamp,
         ];
 
         $this->_database->prepareAndExecute($updateQuery, $updateParams);

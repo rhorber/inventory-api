@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 20.08.2020
+ * @version 04.09.2020
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -24,7 +24,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 20.08.2020
+ * @version 04.09.2020
  */
 class ArticlesController
 {
@@ -165,7 +165,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.09.2020
      */
     public function updateArticle(int $articleId)
     {
@@ -177,8 +177,14 @@ class ArticlesController
         $currentStatement = $this->_database->prepareAndExecute($currentQuery, $currentParams);
         $currentArticle   = $currentStatement->fetch();
 
-        if (isset($payload['timestamp']) && $payload['timestamp'] < $currentArticle['timestamp']) {
-            Http::sendNoContent();
+        if (isset($payload['timestamp'])) {
+            $timestamp = $payload['timestamp'];
+
+            if ($timestamp < $currentArticle['timestamp']) {
+                Http::sendNoContent();
+            }
+        } else {
+            $timestamp = time();
         }
 
         if ($currentArticle['category'] != $payload['category']) {
@@ -204,7 +210,7 @@ class ArticlesController
             ':size'      => $payload['size'],
             ':unit'      => $payload['unit'],
             ':position'  => $articlePosition,
-            ':timestamp' => time(),
+            ':timestamp' => $timestamp,
         ];
         $this->_database->prepareAndExecute($updateQuery, $updateParams);
 
@@ -252,7 +258,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.09.2020
      */
     public function resetArticle(int $articleId)
     {
@@ -260,14 +266,17 @@ class ArticlesController
         $idParams = [':id' => $articleId];
 
         if (isset($payload['timestamp'])) {
-            $currentQuery = "SELECT timestamp FROM articles WHERE id = :id";
+            $timestamp = $payload['timestamp'];
 
+            $currentQuery     = "SELECT timestamp FROM articles WHERE id = :id";
             $currentStatement = $this->_database->prepareAndExecute($currentQuery, $idParams);
             $currentTimestamp = $currentStatement->fetchColumn(0);
 
-            if ($payload['timestamp'] < $currentTimestamp) {
+            if ($timestamp < $currentTimestamp) {
                 $this->returnArticle($articleId);
             }
+        } else {
+            $timestamp = time();
         }
 
         $deleteLotsQuery = "
@@ -283,7 +292,7 @@ class ArticlesController
         ";
         $updateArticleParams = [
             ':id'        => $articleId,
-            ':timestamp' => time(),
+            ':timestamp' => $timestamp,
         ];
         $this->_database->prepareAndExecute($updateArticleQuery, $updateArticleParams);
 
