@@ -1,0 +1,244 @@
+openapi: 3.0.3
+info:
+  title: Rhorber Inventory
+  description: API of the Inventory by rhorber.
+  version: 1.1.0
+
+servers:
+  - url: /api/v1
+
+security:
+  - apiKey: [ ]
+
+paths:
+  /inventory:
+    get:
+      summary: Get all stored items
+      responses:
+        '200':
+          description: Element `items` containing array of items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /item/{id}:
+    get:
+      summary: Get an item
+      responses:
+        '200':
+          description: The requested item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      summary: Update an item
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '204':
+          description: The item was updated successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    parameters:
+      - $ref: '#/components/parameters/ItemId'
+  /item:
+    post:
+      summary: Create an item
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '204':
+          description: The item was created successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /item/{id}/decrement:
+    get:
+      summary: Decrease the item's stock by one.
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '204':
+          description: The item's stock was updated successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /item/{id}/increment:
+    get:
+      summary: Increase the item's stock by one.
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '204':
+          description: The item's stock was updated successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /item/{id}/move-down:
+    get:
+      summary: Move the item down (increase position).
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '204':
+          description: The item was moved successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /item/{id}/move-up:
+    get:
+      summary: Move the item up (decrease position).
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '204':
+          description: The item was moved successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /item/{id}/reset-stock:
+    get:
+      summary: Reset the item's stock (set to zero).
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '204':
+          description: The item's stock was reset successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          default: 'N/A'
+        size:
+          type: number
+          default: 0
+        unit:
+          type: string
+          default: 'N/A'
+        best_before:
+          type: string
+          default: ''
+        stock:
+          type: integer
+          default: 0
+        position:
+          type: integer
+          readOnly: true
+  responses:
+    BadRequest:
+      description: 'Bad request: Header `Origin` is missing'
+    Unauthorized:
+      description: 'Unauthorized: Bearer token is missing or invalid'
+    Forbidden:
+      description: 'Forbidden: Wrong origin or preflighted request failed due to forbidden header'
+    MethodNotAllowed:
+      description: 'Method not allowed: Preflighted request failed due to forbidden method'
+    InternalServerError:
+      description: 'Internal Server Error'
+  parameters:
+    ItemId:
+      name: id
+      in: path
+      description: ID of the item to process.
+      required: true
+      schema: { type: integer }
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      description: 'Pass the API Token preceded by `Bearer` (and a space).'
+      name: Authorization
+      in: header
