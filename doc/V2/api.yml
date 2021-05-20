@@ -1,0 +1,588 @@
+openapi: 3.0.3
+info:
+  title: Rhorber Inventory
+  description: API of the Inventory by rhorber.
+  version: 2.1.0
+
+servers:
+  - url: /api/v2
+
+security:
+  - apiKey: [ ]
+
+tags:
+  - name: categories
+    description: Methods for managing the categories
+  - name: articles
+    description: Methods for managing the articles
+
+paths:
+  /categories:
+    get:
+      tags:
+        - categories
+      summary: Get all stored categories
+      responses:
+        '200':
+          description: Element `categories` containing array of categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - categories
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+      responses:
+        '204':
+          description: The category was created successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /categories/{id}:
+    get:
+      tags:
+        - categories
+      summary: Get a category
+      responses:
+        '200':
+          description: The requested category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+        - categories
+      summary: Update a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+      responses:
+        '204':
+          description: The category was updated successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    parameters:
+      - $ref: '#/components/parameters/CategoryId'
+  /categories/{id}/articles:
+    get:
+      tags:
+        - categories
+      summary: Get all articles of a category
+      responses:
+        '200':
+          description: Element `articles` containing array of articles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  articles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Article'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /categories/{id}/move-down:
+    put:
+      tags:
+        - categories
+      summary: Move the category down (increase position).
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '200':
+          description: The updated category and the category that got swapped with it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoCategories'
+              examples:
+                CategoriesMoveDown:
+                  $ref: '#/components/examples/CategoriesMoveDown'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /categories/{id}/move-up:
+    put:
+      tags:
+        - categories
+      summary: Move the category up (decrease position).
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '200':
+          description: The updated category and the category that got swapped with it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoCategories'
+              examples:
+                CategoriesMoveUp:
+                  $ref: '#/components/examples/CategoriesMoveUp'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /articles:
+    get:
+      tags:
+        - articles
+      summary: Get all stored articles
+      responses:
+        '200':
+          description: Element `articles` containing array of articles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  articles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Article'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - articles
+      summary: Create an article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Article'
+      responses:
+        '204':
+          description: The article was created successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /articles/{id}:
+    get:
+      tags:
+        - articles
+      summary: Get an article
+      responses:
+        '200':
+          description: The requested article
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+        - articles
+      summary: Update an article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Article'
+      responses:
+        '204':
+          description: The article was updated successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    parameters:
+      - $ref: '#/components/parameters/ArticleId'
+  /articles/{id}/decrement:
+    put:
+      tags:
+        - articles
+      summary: Decrease the article's stock by one.
+      parameters:
+        - $ref: '#/components/parameters/ArticleId'
+      responses:
+        '200':
+          description: The updated article.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /articles/{id}/increment:
+    put:
+      tags:
+        - articles
+      summary: Increase the article's stock by one.
+      parameters:
+        - $ref: '#/components/parameters/ArticleId'
+      responses:
+        '200':
+          description: The updated article.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /articles/{id}/move-down:
+    put:
+      tags:
+        - articles
+      summary: Move the article down (increase position).
+      parameters:
+        - $ref: '#/components/parameters/ArticleId'
+      responses:
+        '200':
+          description: The updated article and the article that got swapped with it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoArticles'
+              examples:
+                ArticlesMoveDown:
+                  $ref: '#/components/examples/ArticlesMoveDown'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /articles/{id}/move-up:
+    put:
+      tags:
+        - articles
+      summary: Move the article up (decrease position).
+      parameters:
+        - $ref: '#/components/parameters/ArticleId'
+      responses:
+        '200':
+          description: The moved article and the article that got swapped with it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoArticles'
+              examples:
+                ArticlesMoveUp:
+                  $ref: '#/components/examples/ArticlesMoveUp'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /articles/{id}/reset:
+    put:
+      tags:
+        - articles
+      summary: Reset the article's stock and best before.
+      parameters:
+        - $ref: '#/components/parameters/ArticleId'
+      responses:
+        '200':
+          description: The updated article.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Category:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        position:
+          type: integer
+          readOnly: true
+    Article:
+      type: object
+      required:
+        - category
+        - name
+        - stock
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          type: integer
+          required: true
+        name:
+          type: string
+        size:
+          type: number
+        unit:
+          type: string
+        best_before:
+          type: string
+        stock:
+          type: integer
+        position:
+          type: integer
+          readOnly: true
+        timestamp:
+          type: integer
+          format: int32
+          description: |
+            Optional to send, exists in resopnse.
+            Represents the last time the article was created or changed.
+            If the timestamp in the database is newer, no changes will be made.
+            This can be used for synchronization.
+    TwoCategories:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+          minItems: 2
+          maxItems: 2
+    TwoArticles:
+      type: object
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Article'
+          minItems: 2
+          maxItems: 2
+
+  responses:
+    BadRequest:
+      description: 'Bad request: Header `Origin` is missing'
+    Unauthorized:
+      description: 'Unauthorized: Bearer token is missing or invalid'
+    Forbidden:
+      description: 'Forbidden: Wrong origin or preflighted request failed due to forbidden header'
+    MethodNotAllowed:
+      description: 'Method not allowed: Preflighted request failed due to forbidden method'
+    InternalServerError:
+      description: 'Internal Server Error'
+
+  parameters:
+    CategoryId:
+      name: id
+      in: path
+      description: ID of the category to process.
+      required: true
+      schema: { type: integer }
+    ArticleId:
+      name: id
+      in: path
+      description: ID of the article to process.
+      required: true
+      schema: { type: integer }
+
+  examples:
+    CategoriesMoveDown:
+      summary: 'Response of category move down operation'
+      value:
+        categories:
+          - id: 1
+            name: 'Category with CategoryId'
+            position: 2
+          - id: 2
+            name: 'Category that was at the target position'
+            position: 1
+    CategoriesMoveUp:
+      summary: 'Response of category move up operation'
+      value:
+        categories:
+          - id: 1
+            name: 'Category with CategoryId'
+            position: 1
+          - id: 2
+            name: 'Category that was at the target position'
+            position: 2
+    ArticlesMoveDown:
+      summary: 'Response of article move down operation'
+      value:
+        articles:
+          - id: 1
+            category: 2
+            name: 'Article with ArticleId'
+            size: 10
+            unit: 'ml'
+            best_before: '31.12.2021'
+            stock: 20
+            position: 2
+            timestamp: 1623106772
+          - id: 2
+            category: 2
+            name: 'Article that was at the target position'
+            size: 20
+            unit: 'ml'
+            best_before: '30.11.2021'
+            stock: 10
+            position: 1
+            timestamp: 1623106773
+    ArticlesMoveUp:
+      summary: 'Response of article move up operation'
+      value:
+        articles:
+          - id: 1
+            category: 2
+            name: 'Article with ArticleId'
+            size: 10
+            unit: 'ml'
+            best_before: '31.12.2021'
+            stock: 20
+            position: 1
+            timestamp: 1623106772
+          - id: 2
+            category: 2
+            name: 'Article that was at the target position'
+            size: 20
+            unit: 'ml'
+            best_before: '30.11.2021'
+            stock: 10
+            position: 2
+            timestamp: 1623106773
+
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      description: 'Pass the API Token preceded by `Bearer` (and a space).'
+      name: Authorization
+      in: header
