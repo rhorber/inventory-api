@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 21.11.2019
+ * @version 12.08.2021
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 21.11.2019
+ * @version 12.08.2021
  */
 class Http
 {
@@ -25,7 +25,7 @@ class Http
      * @access private
      * @var    string[]
      */
-    private static $allowedMethods = ['GET', 'PUT', 'POST'];
+    private static $allowedMethods = ['GET', 'PUT', 'POST', 'DELETE'];
 
     /**
      * Headers allowed to request with `Access-Control-Request-Headers` header (lowercase).
