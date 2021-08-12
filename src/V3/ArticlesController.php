@@ -131,29 +131,7 @@ class ArticlesController
         $articleId = $this->_database->lastInsertId();
 
         if (isset($payload['lots'])) {
-            $insertLotQuery     = "
-                INSERT INTO lots (
-                    article, best_before, stock, position, timestamp
-                ) VALUES (
-                    :article, :best_before, :stock, :position, :timestamp
-                )
-            ";
-            $insertLotStatement = $this->_database->prepare($insertLotQuery);
-
-            $lotPosition = 0;
-            foreach ($payload['lots'] as $lot) {
-                $lotPosition++;
-                $lotTimestamp = $lot['timestamp'] ?? time();
-
-                $insertLotParams = [
-                    ':article'     => $articleId,
-                    ':best_before' => $lot['best_before'],
-                    ':stock'       => $lot['stock'],
-                    ':position'    => $lotPosition,
-                    ':timestamp'   => $lotTimestamp,
-                ];
-                $insertLotStatement->execute($insertLotParams);
-            }
+            $this->_insertLots($articleId, $payload['lots']);
         }
 
         Http::sendNoContent();
@@ -228,29 +206,7 @@ class ArticlesController
             $deleteLotsParams = [':id' => $articleId];
             $this->_database->prepareAndExecute($deleteLotsQuery, $deleteLotsParams);
 
-            $insertLotQuery     = "
-                INSERT INTO lots (
-                    article, best_before, stock, position, timestamp
-                ) VALUES (
-                    :article, :best_before, :stock, :position, :timestamp
-                )
-            ";
-            $insertLotStatement = $this->_database->prepare($insertLotQuery);
-
-            $lotPosition = 0;
-            foreach ($payload['lots'] as $lot) {
-                $lotPosition++;
-                $lotTimestamp = $lot['timestamp'] ?? time();
-
-                $insertLotParams = [
-                    ':article'     => $articleId,
-                    ':best_before' => $lot['best_before'],
-                    ':stock'       => $lot['stock'],
-                    ':position'    => $lotPosition,
-                    ':timestamp'   => $lotTimestamp,
-                ];
-                $insertLotStatement->execute($insertLotParams);
-            }
+            $this->_insertLots($articleId, $payload['lots']);
         }
 
         Http::sendNoContent();
@@ -338,7 +294,7 @@ class ArticlesController
     /**
      * Returns the article with its lots.
      *
-     * @param integer $articleId       ID of the article to return.
+     * @param integer $articleId ID of the article to return.
      *
      * @return  array Article row with an additional index `lots` containing its lots.
      * @access  private
@@ -402,6 +358,44 @@ class ArticlesController
         $position     = $maxStatement->fetchColumn(0);
 
         return $position;
+    }
+
+    /**
+     * Inserts the article's lots from the passed payload.
+     *
+     * @param integer $articleId ID of the article to insert the lots for.
+     * @param array   $lots      Lots element from the payload.
+     *
+     * @return  void
+     * @access  private
+     * @author  Raphael Horber
+     * @version 12.08.2021
+     */
+    private function _insertLots(int $articleId, array $lots)
+    {
+        $query     = "
+            INSERT INTO lots (
+                article, best_before, stock, position, timestamp
+            ) VALUES (
+                :article, :best_before, :stock, :position, :timestamp
+            )
+        ";
+        $statement = $this->_database->prepare($query);
+
+        $position = 0;
+        foreach ($lots as $lot) {
+            $position++;
+            $timestamp = $lot['timestamp'] ?? time();
+
+            $params = [
+                ':article'     => $articleId,
+                ':best_before' => $lot['best_before'],
+                ':stock'       => $lot['stock'],
+                ':position'    => $position,
+                ':timestamp'   => $timestamp,
+            ];
+            $statement->execute($params);
+        }
     }
 
     /**
