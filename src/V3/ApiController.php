@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 05.08.2020
+ * @version 12.08.2021
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -20,7 +20,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 05.08.2020
+ * @version 12.08.2021
  */
 class ApiController extends AbstractApiController
 {
@@ -42,7 +42,7 @@ class ApiController extends AbstractApiController
      *
      * @access  private
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 12.08.2021
      */
     private function __construct()
     {
@@ -60,6 +60,11 @@ class ApiController extends AbstractApiController
 
         if ($this->entity === "lots") {
             $this->_handleLotsRequest();
+            return;
+        }
+
+        if ($this->entity === "inventories") {
+            $this->_handleInventoriesRequest();
             return;
         }
 
@@ -196,6 +201,36 @@ class ApiController extends AbstractApiController
             } elseif ($this->action === "move-up") {
                 $controller->moveUp($this->entityId);
             }
+        }
+
+        Http::sendNotFound();
+    }
+
+    /**
+     * Handles requests to "/api/v3/inventories/...".
+     *
+     * Valid requests:
+     * - "GET    .../inventories"
+     * - "POST   .../inventories"
+     * - "DELETE .../inventories"
+     *
+     * If the request is valid the database operation will be delegated to {@link InventoriesController}.
+     *
+     * @return  void
+     * @access  private
+     * @author  Raphael Horber
+     * @version 12.08.2021
+     */
+    private function _handleInventoriesRequest()
+    {
+        $controller = new InventoriesController();
+
+        if ($this->method === "GET") {
+            $controller->status();
+        } elseif ($this->method === "POST") {
+            $controller->start();
+        } elseif ($this->method === "DELETE") {
+            $controller->stop();
         }
 
         Http::sendNotFound();
