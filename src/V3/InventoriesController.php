@@ -32,6 +32,30 @@ class InventoriesController
 
 
     /**
+     * Returns whether an inventory (stocktaking) is active/running or not.
+     *
+     * @param Database $database Database connection.
+     *
+     * @return  boolean Whether an inventory is active.
+     * @access  public
+     * @author  Raphael Horber
+     * @version 12.08.2021
+     */
+    public static function isInventoryActive(Database $database): bool
+    {
+        $query = "
+            SELECT COUNT(*) AS count
+            FROM inventories
+            WHERE stop IS NULL
+        ";
+
+        $inventories = $database->prepareAndExecute($query, []);
+        $count       = $inventories->fetchColumn(0);
+
+        return ($count > 0);
+    }
+
+    /**
      * Constructor: Connects to the database.
      *
      * @access  public
@@ -53,16 +77,7 @@ class InventoriesController
      */
     public function status()
     {
-        $query = "
-            SELECT COUNT(*) AS count
-            FROM inventories
-            WHERE stop IS NULL
-        ";
-
-        $statement = $this->_database->prepareAndExecute($query, []);
-        $count     = $statement->fetchColumn(0);
-
-        $status = ($count > 0) ? "active" : "inactive";
+        $status = (self::isInventoryActive($this->_database)) ? "active" : "inactive";
 
         $response = ['status' => $status];
         Http::sendJsonResponse($response);

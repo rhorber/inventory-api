@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.09.2020
+ * @version 12.08.2021
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -24,7 +24,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.09.2020
+ * @version 12.08.2021
  */
 class ArticlesController
 {
@@ -100,29 +100,31 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 12.08.2021
      */
     public function createArticle()
     {
         $payload = Helpers::getSanitizedPayload();
 
-        $position  = $this->_getNextPositionInCategory($payload['category']);
-        $timestamp = $payload['timestamp'] ?? time();
+        $inventoried = $this->_getInventoriedStatus();
+        $position    = $this->_getNextPositionInCategory($payload['category']);
+        $timestamp   = $payload['timestamp'] ?? time();
 
         $insertQuery  = "
             INSERT INTO articles (
-                category, name, size, unit, position, timestamp
+                category, name, size, unit, inventoried, position, timestamp
             ) VALUES (
-                :category, :name, :size, :unit, :position, :timestamp
+                :category, :name, :size, :unit, :inventoried, :position, :timestamp
             )
         ";
         $insertParams = [
-            ':category'  => $payload['category'],
-            ':name'      => $payload['name'],
-            ':size'      => $payload['size'],
-            ':unit'      => $payload['unit'],
-            ':position'  => $position,
-            ':timestamp' => $timestamp,
+            ':category'    => $payload['category'],
+            ':name'        => $payload['name'],
+            ':size'        => $payload['size'],
+            ':unit'        => $payload['unit'],
+            ':inventoried' => $inventoried,
+            ':position'    => $position,
+            ':timestamp'   => $timestamp,
         ];
         $this->_database->prepareAndExecute($insertQuery, $insertParams);
 
@@ -165,7 +167,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.09.2020
+     * @version 12.08.2021
      */
     public function updateArticle(int $articleId)
     {
@@ -177,6 +179,14 @@ class ArticlesController
         $currentStatement = $this->_database->prepareAndExecute($currentQuery, $currentParams);
         $currentArticle   = $currentStatement->fetch();
 
+        $inventoried = $this->_getInventoriedStatus();
+
+        if ($currentArticle['category'] != $payload['category']) {
+            $articlePosition = $this->_getNextPositionInCategory($payload['category']);
+        } else {
+            $articlePosition = $currentArticle['position'];
+        }
+
         if (isset($payload['timestamp'])) {
             $timestamp = $payload['timestamp'];
 
@@ -187,30 +197,26 @@ class ArticlesController
             $timestamp = time();
         }
 
-        if ($currentArticle['category'] != $payload['category']) {
-            $articlePosition = $this->_getNextPositionInCategory($payload['category']);
-        } else {
-            $articlePosition = $currentArticle['position'];
-        }
-
         $updateQuery  = "
             UPDATE articles SET
                 category = :category,
                 name = :name,
                 size = :size,
                 unit = :unit,
+                inventoried = :inventoried,
                 position = :position,
                 timestamp = :timestamp
             WHERE id = :id
         ";
         $updateParams = [
-            ':id'        => $articleId,
-            ':category'  => $payload['category'],
-            ':name'      => $payload['name'],
-            ':size'      => $payload['size'],
-            ':unit'      => $payload['unit'],
-            ':position'  => $articlePosition,
-            ':timestamp' => $timestamp,
+            ':id'          => $articleId,
+            ':category'    => $payload['category'],
+            ':name'        => $payload['name'],
+            ':size'        => $payload['size'],
+            ':unit'        => $payload['unit'],
+            ':inventoried' => $inventoried,
+            ':position'    => $articlePosition,
+            ':timestamp'   => $timestamp,
         ];
         $this->_database->prepareAndExecute($updateQuery, $updateParams);
 
@@ -352,6 +358,25 @@ class ArticlesController
         $article['lots'] = $lotsStatement->fetchAll();
 
         return $article;
+    }
+
+    /**
+     * Gets status for the inventoried field, accordingly to inventories status.
+     *
+     * @return  integer
+     * @access  private
+     * @author  Raphael Horber
+     * @version 12.08.2021
+     */
+    private function _getInventoriedStatus(): int
+    {
+        $active = InventoriesController::isInventoryActive($this->_database);
+
+        if ($active) {
+            return 1;
+        } else {
+            return -1;
+        }
     }
 
     /**
