@@ -23,6 +23,7 @@ CREATE TABLE `articles` (
   `name` varchar(100) NOT NULL DEFAULT '',
   `size` double NOT NULL DEFAULT '0',
   `unit` varchar(10) NOT NULL,
+  `inventoried` tinyint(4) NOT NULL DEFAULT '-1' COMMENT '-1 no inventory active, 0 not inventoried, 1 inventoried',
   `position` int(11) NOT NULL,
   `timestamp` int(11) NOT NULL,
   PRIMARY KEY (`id`),
@@ -46,6 +47,18 @@ CREATE TABLE `lots` (
   KEY `lots_article_articles_id` (`article`),
   CONSTRAINT `lots_article_articles_id` FOREIGN KEY (`article`) REFERENCES `articles` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `inventories`
+--
+
+DROP TABLE IF EXISTS `inventories`;
+CREATE TABLE `inventories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `start` int(11) NOT NULL,
+  `stop` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE = InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 --
 -- Table structure for table `log`

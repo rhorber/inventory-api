@@ -25,6 +25,7 @@ create table articles
 	name varchar(100) default ''::character varying not null,
 	size double precision default 0 not null,
 	unit varchar(10) not null,
+    inventoried smallint default '-1'::integer not null,
 	position integer not null,
 	timestamp integer not null,
 	constraint articles_id_pk
@@ -49,6 +50,21 @@ create table if not exists lots
 	constraint lots_id_pk
 		primary key (id)
 );
+
+--
+-- Table structure for table `inventories`
+--
+
+drop table if exists inventories;
+create table inventories (
+    id serial,
+    start integer not null,
+    stop integer,
+    constraint inventories_id_pk
+        primary key (id)
+);
+
+comment on column articles.inventoried is '-1 no inventory active, 0 not inventoried, 1 inventoried';
 
 --
 -- Table structure for table `log`
