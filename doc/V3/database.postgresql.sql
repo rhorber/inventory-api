@@ -27,6 +27,7 @@ create table articles
   unit varchar(10) not null,
   inventoried smallint default '-1'::integer not null,
   position integer not null,
+  gtin varchar(14) null,
   timestamp integer not null,
   constraint articles_id_pk
     primary key (id),
