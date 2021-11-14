@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 12.08.2021
+ * @version 14.11.2021
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -24,7 +24,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 12.08.2021
+ * @version 14.11.2021
  */
 class ArticlesController
 {
@@ -100,7 +100,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 14.11.2021
      */
     public function createArticle()
     {
@@ -112,9 +112,9 @@ class ArticlesController
 
         $insertQuery  = "
             INSERT INTO articles (
-                category, name, size, unit, inventoried, position, timestamp
+                category, name, size, unit, gtin, inventoried, position, timestamp
             ) VALUES (
-                :category, :name, :size, :unit, :inventoried, :position, :timestamp
+                :category, :name, :size, :unit, :gtin, :inventoried, :position, :timestamp
             )
         ";
         $insertParams = [
@@ -122,6 +122,7 @@ class ArticlesController
             ':name'        => $payload['name'],
             ':size'        => $payload['size'],
             ':unit'        => $payload['unit'],
+            ':gtin'        => $payload['gtin'],
             ':inventoried' => $inventoried,
             ':position'    => $position,
             ':timestamp'   => $timestamp,
@@ -145,7 +146,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 14.11.2021
      */
     public function updateArticle(int $articleId)
     {
@@ -181,6 +182,7 @@ class ArticlesController
                 name = :name,
                 size = :size,
                 unit = :unit,
+                gtin = :gtin,
                 inventoried = :inventoried,
                 position = :position,
                 timestamp = :timestamp
@@ -192,6 +194,7 @@ class ArticlesController
             ':name'        => $payload['name'],
             ':size'        => $payload['size'],
             ':unit'        => $payload['unit'],
+            ':gtin'        => $payload['gtin'],
             ':inventoried' => $inventoried,
             ':position'    => $articlePosition,
             ':timestamp'   => $timestamp,

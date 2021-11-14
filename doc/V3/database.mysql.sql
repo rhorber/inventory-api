@@ -25,6 +25,7 @@ CREATE TABLE `articles` (
   `unit` varchar(10) NOT NULL,
   `inventoried` tinyint(4) NOT NULL DEFAULT '-1' COMMENT '-1 no inventory active, 0 not inventoried, 1 inventoried',
   `position` int(11) NOT NULL,
+  `gtin` varchar(14) NULL,
   `timestamp` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `articles_category_categories_id` (`category`),

@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 12.08.2021
+ * @version 14.11.2021
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -20,7 +20,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 12.08.2021
+ * @version 14.11.2021
  */
 class ApiController extends AbstractApiController
 {
@@ -42,7 +42,7 @@ class ApiController extends AbstractApiController
      *
      * @access  private
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 14.11.2021
      */
     private function __construct()
     {
@@ -65,6 +65,11 @@ class ApiController extends AbstractApiController
 
         if ($this->entity === "inventories") {
             $this->_handleInventoriesRequest();
+            return;
+        }
+
+        if ($this->entity === "gtin") {
+            $this->_handleGtinRequest();
             return;
         }
 
@@ -231,6 +236,30 @@ class ApiController extends AbstractApiController
             $controller->start();
         } elseif ($this->method === "DELETE") {
             $controller->stop();
+        }
+
+        Http::sendNotFound();
+    }
+
+    /**
+     * Handles requests to "/api/v3/gtin/...".
+     *
+     * Valid requests:
+     * - "GET  .../gtin/:id"
+     *
+     * If the request is valid the database operation will be delegated to {@link GtinController}.
+     *
+     * @return  void
+     * @access  private
+     * @author  Raphael Horber
+     * @version 14.11.2021
+     */
+    private function _handleGtinRequest()
+    {
+        $controller = new GtinController();
+
+        if ($this->method === "GET" && $this->entityId !== null) {
+            $controller->query($this->entityId);
         }
 
         Http::sendNotFound();
