@@ -24,3 +24,9 @@ There are scripts for the MySQL/MariaDB and PostgreSQL dialects. Each major API 
 
 They are stored under `doc/V{major}/database.{dialect}.sql`.
 I.e. [doc/V1/database.postgresql.sql](./doc/V1/database.postgresql.sql).
+
+## Credits
+
+The API has a `gtin` endpoint to search by GTIN (Global Trade Item Number).
+If the requested GTIN is not associated with an existing article,
+the Open Food Facts API is queried. See [openfoodfacts.org](https://world.openfoodfacts.org/)
