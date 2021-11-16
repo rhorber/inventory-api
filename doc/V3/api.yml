@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Rhorber Inventory
   description: API of the Inventory by rhorber.
-  version: 3.1.0
+  version: 3.2.0
 
 servers:
   - url: /api/v3
@@ -19,6 +19,8 @@ tags:
     description: Methods for managing the lots
   - name: inventories
     description: Methods for managing an inventory (stocktaking)
+  - name: gtin
+    description: Methods for working with a GTIN (global trade item number)
 
 paths:
   /categories:
@@ -591,6 +593,44 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /gtin/{gtin}:
+    get:
+      tags:
+        - gtin
+      summary: Search an article with a GTIN
+      parameters:
+        - name: gtin
+          in: path
+          description: GTIN to search with.
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: A response object with the found data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GtinSearchResponse'
+              examples:
+                Existing:
+                  $ref: '#/components/examples/GtinSearchExisting'
+                Found:
+                  $ref: '#/components/examples/GtinSearchFound'
+                NotFound:
+                  $ref: '#/components/examples/GtinSearchNotFound'
+                Error:
+                  $ref: '#/components/examples/GtinSearchError'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   schemas:
     Category:
@@ -708,6 +748,36 @@ components:
           type: string
           enum: [ 'active', 'inactive' ]
           readOnly: true
+    GtinSearchResponse:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [ 'existing', 'found', 'notFound', 'error' ]
+        articleId:
+          type: integer
+          description: |
+            If an existing article has the passed GTIN, this property contains its ID.<br />
+            Only exists if an existing article has the passed GTIN.
+        name:
+          type: string
+          description: |
+            If the passed GTIN is not found locally but on Open Food Facts,
+            this property contains the article name.<br />
+            Only exists if the passed GTIN was not found locally but on Open Food Facts.
+        quantity:
+          type: string
+          description: |
+            If the passed GTIN is not found locally but on Open Food Facts,
+            this property contains the article's quantity (may be empty).<br />
+            Only exists if the passed GTIN was not found locally but on Open Food Facts.
+        error:
+          type: string
+          description: |
+            If an error occurred, the error message.<br />
+            Only exists if an error occurred.
     TwoCategories:
       type: object
       properties:
@@ -889,6 +959,26 @@ components:
             stock: 10
             position: 2
             timestamp: 1623106773
+    GtinSearchExisting:
+      summary: 'Response of a GTIN query where an existing article was found'
+      value:
+        type: 'existing'
+        articleId: 42
+    GtinSearchFound:
+      summary: 'Response of a GTIN query where an article was found on Open Food Facts'
+      value:
+        type: 'found'
+        name: 'Some tasty pasta'
+        quantity: '500 g'
+    GtinSearchNotFound:
+      summary: 'Response of a GTIN query where no article was found on Open Food Facts'
+      value:
+        type: 'notFound'
+    GtinSearchError:
+      summary: 'Response of a GTIN query where an error occurred querying Open Food Facts'
+      value:
+        type: 'error'
+        error: 'cURL error: #500 Internal Server Error'
 
   securitySchemes:
     apiKey:
