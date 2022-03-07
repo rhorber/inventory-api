@@ -697,6 +697,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Lot'
+        gtin:
+          type: array
+          items: { type: string }
     ArticleWithoutLots:
       allOf:
         - $ref: '#/components/schemas/Article'

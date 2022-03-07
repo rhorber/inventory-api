@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 14.11.2021
+ * @version 07.03.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -24,7 +24,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 14.11.2021
+ * @version 07.03.2022
  */
 class ArticlesController
 {
@@ -100,7 +100,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 14.11.2021
+     * @version 07.03.2022
      */
     public function createArticle()
     {
@@ -112,9 +112,9 @@ class ArticlesController
 
         $insertQuery  = "
             INSERT INTO articles (
-                category, name, size, unit, gtin, inventoried, position, timestamp
+                category, name, size, unit, inventoried, position, timestamp
             ) VALUES (
-                :category, :name, :size, :unit, :gtin, :inventoried, :position, :timestamp
+                :category, :name, :size, :unit, :inventoried, :position, :timestamp
             )
         ";
         $insertParams = [
@@ -122,7 +122,6 @@ class ArticlesController
             ':name'        => $payload['name'],
             ':size'        => $payload['size'],
             ':unit'        => $payload['unit'],
-            ':gtin'        => $payload['gtin'],
             ':inventoried' => $inventoried,
             ':position'    => $position,
             ':timestamp'   => $timestamp,
@@ -133,6 +132,10 @@ class ArticlesController
 
         if (isset($payload['lots'])) {
             $this->_insertLots($articleId, $payload['lots']);
+        }
+
+        if (isset($payload['gtins'])) {
+            $this->_insertGtins($articleId, $payload['gtins']);
         }
 
         Http::sendNoContent();
@@ -146,7 +149,7 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 14.11.2021
+     * @version 07.03.2022
      */
     public function updateArticle(int $articleId)
     {
@@ -182,7 +185,6 @@ class ArticlesController
                 name = :name,
                 size = :size,
                 unit = :unit,
-                gtin = :gtin,
                 inventoried = :inventoried,
                 position = :position,
                 timestamp = :timestamp
@@ -194,7 +196,6 @@ class ArticlesController
             ':name'        => $payload['name'],
             ':size'        => $payload['size'],
             ':unit'        => $payload['unit'],
-            ':gtin'        => $payload['gtin'],
             ':inventoried' => $inventoried,
             ':position'    => $articlePosition,
             ':timestamp'   => $timestamp,
@@ -210,6 +211,17 @@ class ArticlesController
             $this->_database->prepareAndExecute($deleteLotsQuery, $deleteLotsParams);
 
             $this->_insertLots($articleId, $payload['lots']);
+        }
+
+        if (isset($payload['gtins'])) {
+            $deleteGtinsQuery  = "
+                DELETE FROM gtins
+                WHERE article = :id
+            ";
+            $deleteGtinsParams = [':id' => $articleId];
+            $this->_database->prepareAndExecute($deleteGtinsQuery, $deleteGtinsParams);
+
+            $this->_insertGtins($articleId, $payload['gtins']);
         }
 
         Http::sendNoContent();
@@ -302,7 +314,7 @@ class ArticlesController
      * @return  array Article row with an additional index `lots` containing its lots.
      * @access  private
      * @author  Raphael Horber
-     * @version 20.08.2020
+     * @version 07.03.2022
      */
     private function _getArticle(int $articleId): array
     {
@@ -315,6 +327,10 @@ class ArticlesController
         $lotsQuery       = "SELECT * FROM lots WHERE article = :id";
         $lotsStatement   = $this->_database->prepareAndExecute($lotsQuery, $params);
         $article['lots'] = $lotsStatement->fetchAll();
+
+        $gtinsQuery       = "SELECT gtin FROM gtins WHERE article = :id ORDER BY gtin";
+        $gtinsStatement   = $this->_database->prepareAndExecute($gtinsQuery, $params);
+        $article['gtins'] = $gtinsStatement->fetchAll(\PDO::FETCH_COLUMN, 0);
 
         return $article;
     }
@@ -396,6 +412,37 @@ class ArticlesController
                 ':stock'       => $lot['stock'],
                 ':position'    => $position,
                 ':timestamp'   => $timestamp,
+            ];
+            $statement->execute($params);
+        }
+    }
+
+    /**
+     * Inserts the article's GTIN numbers from the passed payload.
+     *
+     * @param integer $articleId ID of the article to insert the lots for.
+     * @param array   $gtins     gtins element from the payload.
+     *
+     * @return  void
+     * @access  private
+     * @author  Raphael Horber
+     * @version 07.03.2022
+     */
+    private function _insertGtins(int $articleId, array $gtins)
+    {
+        $query     = "
+            INSERT INTO gtins (
+                article, gtin
+            ) VALUES (
+                :article, :gtin
+            )
+        ";
+        $statement = $this->_database->prepare($query);
+
+        foreach ($gtins as $gtin) {
+            $params = [
+                ':article' => $articleId,
+                ':gtin'    => $gtin,
             ];
             $statement->execute($params);
         }
