@@ -27,7 +27,6 @@ create table articles
   unit varchar(10) not null,
   inventoried smallint default '-1'::integer not null,
   position integer not null,
-  gtin varchar(14) null,
   timestamp integer not null,
   constraint articles_id_pk
     primary key (id),
@@ -49,6 +48,20 @@ create table if not exists lots
   position smallint not null,
   timestamp integer not null,
   constraint lots_id_pk
+    primary key (id)
+);
+
+--
+-- Table structure for table `gtins`
+--
+
+drop table if exists gtins;
+create table if not exists gtins
+(
+  id bigserial not null,
+  article integer not null,
+  gtin varchar(14) not null,
+  constraint gtins_id_pk
     primary key (id)
 );
 

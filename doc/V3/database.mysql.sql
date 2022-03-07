@@ -50,6 +50,20 @@ CREATE TABLE `lots` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 --
+-- Table structure for table `gtins`
+--
+
+DROP TABLE IF EXISTS `gtins`;
+CREATE TABLE `gtins` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `article` int(11) NOT NULL,
+  `gtin` varchar(14) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `gtins_article_articles_id` (`article`),
+  CONSTRAINT `gtins_article_articles_id` FOREIGN KEY (`article`) REFERENCES `articles` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `inventories`
 --
 
