@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 14.11.2021
+ * @version 07.03.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -18,7 +18,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 14.11.2021
+ * @version 07.03.2022
  */
 class GtinController
 {
@@ -54,13 +54,13 @@ class GtinController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 14.11.2021
+     * @version 07.03.2022
      */
     public function query(string $gtin)
     {
         $query     = "
-            SELECT *
-            FROM articles
+            SELECT article
+            FROM gtins
             WHERE gtin = :gtin
         ";
         $params    = [
