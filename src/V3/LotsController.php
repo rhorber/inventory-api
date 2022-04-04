@@ -5,13 +5,14 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.09.2020
+ * @version 04.04.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
 use Rhorber\Inventory\API\Database;
 use Rhorber\Inventory\API\Helpers;
 use Rhorber\Inventory\API\Http;
+use Rhorber\Inventory\API\V3\Entities\Lot;
 
 
 /**
@@ -24,7 +25,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.09.2020
+ * @version 04.04.2022
  */
 class LotsController
 {
@@ -207,7 +208,7 @@ class LotsController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.04.2022
      */
     private function _modifyStock(int $lotId, string $newStock)
     {
@@ -231,7 +232,9 @@ class LotsController
         ";
         $responseParams    = [':id' => $lotId];
         $responseStatement = $this->_database->prepareAndExecute($responseQuery, $responseParams);
-        $lot               = $responseStatement->fetch();
+        $resultRow         = $responseStatement->fetch();
+
+        $lot = Lot::mapToEntity($resultRow);
 
         Http::sendJsonResponse($lot);
     }
@@ -248,7 +251,7 @@ class LotsController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.04.2022
      */
     private function _moveLot(int $lotId, string $compareOperator, string $sortDirection)
     {
@@ -316,9 +319,11 @@ class LotsController
             ':otherId' => $otherLot['id'],
         ];
         $responseStatement = $this->_database->prepareAndExecute($responseQuery, $responseParams);
-        $lots              = $responseStatement->fetchAll();
+        $resultRows        = $responseStatement->fetchAll();
 
+        $lots     = Lot::mapToEntities($resultRows);
         $response = ['lots' => $lots];
+
         Http::sendJsonResponse($response);
     }
 }

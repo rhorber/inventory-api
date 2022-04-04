@@ -5,13 +5,14 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 07.03.2022
+ * @version 04.04.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
 use Rhorber\Inventory\API\Database;
 use Rhorber\Inventory\API\Helpers;
 use Rhorber\Inventory\API\Http;
+use Rhorber\Inventory\API\V3\Entities\Article;
 
 
 /**
@@ -24,7 +25,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 07.03.2022
+ * @version 04.04.2022
  */
 class ArticlesController
 {
@@ -36,6 +37,36 @@ class ArticlesController
      */
     private $_database;
 
+
+    /**
+     * Returns an array of Article entities. Based from the articles result rows.
+     *
+     * It maps the articles result rows to entities, queries the lots of each article,
+     * and sets the property `lots` with the found `Lot` entities.
+     *
+     * @param Database $database     Database connection.
+     * @param array    $articlesRows Result rows, from an articles query, to process.
+     *
+     * @return  Article[] Array of Article entities, with property `lots` set (property `gtin` is not set).
+     * @access  public
+     * @author  Raphael Horber
+     * @version 04.04.2022
+     */
+    public static function getArticlesWithLots(Database $database, array $articlesRows)
+    {
+        $articleRows   = [];
+        $lotsQuery     = "SELECT * FROM lots WHERE article = :id";
+        $lotsStatement = $database->prepare($lotsQuery);
+
+        foreach ($articlesRows as $articleRow) {
+            $lotsParams         = [':id' => $articleRow['id']];
+            $articleRow['lots'] = $database->executeAndFetchAll($lotsStatement, $lotsParams);
+
+            $articleRows[] = $articleRow;
+        }
+
+        return Article::mapToEntities($articleRows);
+    }
 
     /**
      * Constructor: Connects to the database.
@@ -55,25 +86,16 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.04.2022
      */
     public function returnAllArticles()
     {
         $articlesQuery = "SELECT * FROM articles";
         $articlesRows  = $this->_database->queryAndFetch($articlesQuery);
 
-        $articles      = [];
-        $lotsQuery     = "SELECT * FROM lots WHERE article = :id";
-        $lotsStatement = $this->_database->prepare($lotsQuery);
-
-        foreach ($articlesRows as $article) {
-            $lotsParams      = [':id' => $article['id']];
-            $article['lots'] = $this->_database->executeAndFetchAll($lotsStatement, $lotsParams);
-
-            $articles[] = $article;
-        }
-
+        $articles = self::getArticlesWithLots($this->_database, $articlesRows);
         $response = ['articles' => $articles];
+
         Http::sendJsonResponse($response);
     }
 
@@ -311,12 +333,12 @@ class ArticlesController
      *
      * @param integer $articleId ID of the article to return.
      *
-     * @return  array Article row with an additional index `lots` containing its lots.
+     * @return  Article Article entity, with properties `lots` and `gtins` set.
      * @access  private
      * @author  Raphael Horber
-     * @version 07.03.2022
+     * @version 04.04.2022
      */
-    private function _getArticle(int $articleId): array
+    private function _getArticle(int $articleId): Article
     {
         $params = [':id' => $articleId];
 
@@ -332,7 +354,7 @@ class ArticlesController
         $gtinsStatement   = $this->_database->prepareAndExecute($gtinsQuery, $params);
         $article['gtins'] = $gtinsStatement->fetchAll(\PDO::FETCH_COLUMN, 0);
 
-        return $article;
+        return Article::mapToEntity($article);
     }
 
     /**

@@ -5,13 +5,14 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.09.2020
+ * @version 04.04.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
 use Rhorber\Inventory\API\Database;
 use Rhorber\Inventory\API\Helpers;
 use Rhorber\Inventory\API\Http;
+use Rhorber\Inventory\API\V3\Entities\Category;
 
 
 /**
@@ -19,7 +20,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.09.2020
+ * @version 04.04.2022
  */
 class CategoriesController
 {
@@ -50,14 +51,16 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.04.2022
      */
     public function returnAllCategories()
     {
-        $query      = "SELECT * FROM categories";
-        $categories = $this->_database->queryAndFetch($query);
+        $query = "SELECT * FROM categories";
+        $rows  = $this->_database->queryAndFetch($query);
 
-        $response = ['categories' => $categories];
+        $categories = Category::mapToEntities($rows);
+        $response   = ['categories' => $categories];
+
         Http::sendJsonResponse($response);
     }
 
@@ -69,7 +72,7 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.04.2022
      */
     public function returnCategory(int $categoryId)
     {
@@ -77,7 +80,9 @@ class CategoriesController
         $params = [':id' => $categoryId];
 
         $statement = $this->_database->prepareAndExecute($query, $params);
-        $category  = $statement->fetch();
+        $resultRow = $statement->fetch();
+
+        $category = Category::mapToEntity($resultRow);
 
         Http::sendJsonResponse($category);
     }
@@ -90,7 +95,7 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.04.2022
      */
     public function returnArticles(int $categoryId)
     {
@@ -100,18 +105,9 @@ class CategoriesController
         $articlesStatement = $this->_database->prepareAndExecute($articlesQuery, $articlesParams);
         $articlesRows      = $articlesStatement->fetchAll();
 
-        $articles      = [];
-        $lotsQuery     = "SELECT * FROM lots WHERE article = :id";
-        $lotsStatement = $this->_database->prepare($lotsQuery);
-
-        foreach ($articlesRows as $article) {
-            $lotsParams      = [':id' => $article['id']];
-            $article['lots'] = $this->_database->executeAndFetchAll($lotsStatement, $lotsParams);
-
-            $articles[] = $article;
-        }
-
+        $articles = ArticlesController::getArticlesWithLots($this->_database, $articlesRows);
         $response = ['articles' => $articles];
+
         Http::sendJsonResponse($response);
     }
 
@@ -237,7 +233,7 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 04.04.2022
      */
     private function _moveCategory(int $categoryId, string $direction)
     {
@@ -280,9 +276,11 @@ class CategoriesController
             WHERE position IN(:thisPosition, :otherPosition)
         ";
         $responseStatement = $this->_database->prepareAndExecute($responseQuery, $positionParams);
-        $categories        = $responseStatement->fetchAll();
+        $resultRows        = $responseStatement->fetchAll();
 
-        $response = ['categories' => $categories];
+        $categories = Category::mapToEntities($resultRows);
+        $response   = ['categories' => $categories];
+
         Http::sendJsonResponse($response);
     }
 }

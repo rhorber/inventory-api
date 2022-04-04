@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 07.03.2022
+ * @version 04.04.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -18,7 +18,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 07.03.2022
+ * @version 04.04.2022
  */
 class GtinController
 {
@@ -54,7 +54,7 @@ class GtinController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 07.03.2022
+     * @version 04.04.2022
      */
     public function query(string $gtin)
     {
@@ -73,7 +73,7 @@ class GtinController
 
             $response = [
                 'type'      => "existing",
-                'articleId' => $articleId,
+                'articleId' => intval($articleId),
             ];
         } else {
             $response = $this->_queryOpenFoodFactsApi($gtin);
