@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 12.08.2021
+ * @version 04.04.2022
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 12.08.2021
+ * @version 04.04.2022
  */
 class Http
 {
@@ -67,14 +67,14 @@ class Http
     /**
      * Sends a 200 response with the response as encoded JSON.
      *
-     * @param array $response Response to send as encoded JSON.
+     * @param array|object $response Response to send as encoded JSON.
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 20.04.2019
+     * @version 04.04.2022
      */
-    public static function sendJsonResponse(array $response)
+    public static function sendJsonResponse($response)
     {
         header("Content-Type: application/json");
 
