@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 16.04.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -25,7 +25,7 @@ use Rhorber\Inventory\API\V3\Entities\Article;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 16.04.2022
  */
 class ArticlesController
 {
@@ -257,12 +257,13 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.09.2020
+     * @version 16.04.2022
      */
     public function resetArticle(int $articleId)
     {
-        $payload  = Helpers::getSanitizedPayload();
-        $idParams = [':id' => $articleId];
+        $payload     = Helpers::getSanitizedPayload();
+        $idParams    = [':id' => $articleId];
+        $inventoried = $this->_getInventoriedStatus();
 
         if (isset($payload['timestamp'])) {
             $timestamp = $payload['timestamp'];
@@ -286,12 +287,14 @@ class ArticlesController
 
         $updateArticleQuery  = "
             UPDATE articles SET
+                inventoried = :inventoried,
                 timestamp = :timestamp
             WHERE id = :id
         ";
         $updateArticleParams = [
-            ':id'        => $articleId,
-            ':timestamp' => $timestamp,
+            ':id'          => $articleId,
+            ':inventoried' => $inventoried,
+            ':timestamp'   => $timestamp,
         ];
         $this->_database->prepareAndExecute($updateArticleQuery, $updateArticleParams);
 
