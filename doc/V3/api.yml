@@ -233,6 +233,7 @@ paths:
       tags:
         - articles
       summary: Create an article (including its lots)
+      description: If an inventory (stocktaking) is active, the article will be marked as "inventoried".
       requestBody:
         required: true
         content:
@@ -278,6 +279,7 @@ paths:
       tags:
         - articles
       summary: Update an article (including its lots)
+      description: If an inventory (stocktaking) is active, the article will be marked as "inventoried".
       requestBody:
         required: true
         content:
@@ -304,6 +306,7 @@ paths:
       tags:
         - articles
       summary: Move the article down (increase position).
+      description: If an inventory (stocktaking) is active, the article's inventoried state will NOT change.
       parameters:
         - $ref: '#/components/parameters/ArticleId'
       responses:
@@ -331,6 +334,7 @@ paths:
       tags:
         - articles
       summary: Move the article up (decrease position).
+      description: If an inventory (stocktaking) is active, the article's inventoried state will NOT change.
       parameters:
         - $ref: '#/components/parameters/ArticleId'
       responses:
@@ -358,6 +362,7 @@ paths:
       tags:
         - articles
       summary: Reset the article by deleting its lots.
+      description: If an inventory (stocktaking) is active, the article will be marked as "inventoried".
       parameters:
         - $ref: '#/components/parameters/ArticleId'
       responses:
@@ -383,6 +388,7 @@ paths:
       tags:
         - lots
       summary: Create a lot
+      description: If an inventory (stocktaking) is active, the article's inventoried state will NOT change.
       requestBody:
         required: true
         content:
@@ -407,6 +413,7 @@ paths:
       tags:
         - lots
       summary: Update a lot
+      description: If an inventory (stocktaking) is active, the article's inventoried state will NOT change.
       parameters:
         - $ref: '#/components/parameters/LotId'
       requestBody:
@@ -432,6 +439,7 @@ paths:
       tags:
         - lots
       summary: Decrease the lot's stock by one.
+      description: If an inventory (stocktaking) is active, the article's inventoried state will NOT change.
       parameters:
         - $ref: '#/components/parameters/LotId'
       responses:
@@ -456,6 +464,7 @@ paths:
       tags:
         - lots
       summary: Increase the lot's stock by one.
+      description: If an inventory (stocktaking) is active, the article's inventoried state will NOT change.
       parameters:
         - $ref: '#/components/parameters/LotId'
       responses:
@@ -480,6 +489,7 @@ paths:
       tags:
         - lots
       summary: Move the lot down (increase position).
+      description: If an inventory (stocktaking) is active, the article's inventoried state will NOT change.
       parameters:
         - $ref: '#/components/parameters/LotId'
       responses:
@@ -507,6 +517,7 @@ paths:
       tags:
         - lots
       summary: Move the lot up (decrease position).
+      description: If an inventory (stocktaking) is active, the article's inventoried state will NOT change.
       parameters:
         - $ref: '#/components/parameters/LotId'
       responses:
