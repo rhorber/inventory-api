@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 24.04.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -20,7 +20,7 @@ use Rhorber\Inventory\API\V3\Entities\Category;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 24.04.2022
  */
 class CategoriesController
 {
@@ -117,11 +117,11 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 24.04.2022
      */
     public function createCategory()
     {
-        $payload = Helpers::getSanitizedPayload();
+        $payload = Helpers::getPayload();
 
         $maxQuery  = "
             SELECT COALESCE(MAX(position), 0) + 1 AS new_position
@@ -157,11 +157,11 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.09.2020
+     * @version 24.04.2022
      */
     public function updateCategory(int $categoryId)
     {
-        $payload = Helpers::getSanitizedPayload();
+        $payload = Helpers::getPayload();
 
         if (isset($payload['timestamp'])) {
             $currentQuery  = "SELECT timestamp FROM categories WHERE id = :id";
