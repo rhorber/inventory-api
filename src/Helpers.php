@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 20.08.2020
+ * @version 24.04.2022
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 20.08.2020
+ * @version 24.04.2022
  */
 class Helpers
 {
@@ -93,46 +93,33 @@ class Helpers
     }
 
     /**
-     * Decodes the request's payload, sanitizes it, and returns it.
+     * Decodes the request's payload and returns it.
      *
      * @return  array|null
      * @access  public
      * @author  Raphael Horber
-     * @version 25.07.2020
+     * @version 24.04.2022
      */
-    public static function getSanitizedPayload(): ?array
+    public static function getPayload(): ?array
     {
         $payload = file_get_contents("php://input");
         $json    = json_decode($payload, true);
-
-        if ($json !== false && $json !== null) {
-            $json = self::_sanitizeArray($json);
-        }
 
         return $json;
     }
 
     /**
-     * Sanitizes the passed array (recursively).
+     * Decodes the request's payload and returns it.
      *
-     * @param array $array Array to sanitize.
-     *
-     * @return  array
-     * @access  private
-     * @author  Raphael Horber
-     * @version 20.08.2020
+     * @return     array|null
+     * @access     public
+     * @author     Raphael Horber
+     * @version    24.04.2022
+     * @deprecated Since 24.04.2022, use {@see getPayload()} instead.
      */
-    private static function _sanitizeArray(array $array): array
+    public static function getSanitizedPayload(): ?array
     {
-        foreach ($array as $key => $value) {
-            if (is_array($value) === true || $value instanceof \Traversable) {
-                $array[$key] = self::_sanitizeArray($value);
-            } else {
-                $array[$key] = filter_var($value, FILTER_SANITIZE_STRING);
-            }
-        }
-
-        return $array;
+        return self::getPayload();
     }
 
     /**

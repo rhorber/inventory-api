@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 16.04.2022
+ * @version 24.04.2022
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -25,7 +25,7 @@ use Rhorber\Inventory\API\V3\Entities\Article;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 16.04.2022
+ * @version 24.04.2022
  */
 class ArticlesController
 {
@@ -122,11 +122,11 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 07.03.2022
+     * @version 24.04.2022
      */
     public function createArticle()
     {
-        $payload = Helpers::getSanitizedPayload();
+        $payload = Helpers::getPayload();
 
         $inventoried = $this->_getInventoriedStatus();
         $position    = $this->_getNextPositionInCategory($payload['category']);
@@ -171,11 +171,11 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 07.03.2022
+     * @version 24.04.2022
      */
     public function updateArticle(int $articleId)
     {
-        $payload = Helpers::getSanitizedPayload();
+        $payload = Helpers::getPayload();
 
         $currentQuery  = "SELECT category, position, timestamp FROM articles WHERE id = :id";
         $currentParams = [':id' => $articleId];
@@ -257,11 +257,11 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 16.04.2022
+     * @version 24.04.2022
      */
     public function resetArticle(int $articleId)
     {
-        $payload     = Helpers::getSanitizedPayload();
+        $payload     = Helpers::getPayload();
         $idParams    = [':id' => $articleId];
         $inventoried = $this->_getInventoriedStatus();
 
