@@ -65,7 +65,7 @@ class Authorization
         }
 
         $auth = $_SERVER['HTTP_AUTHORIZATION'];
-        if (strtolower(substr($auth, 0, 7)) !== 'bearer ') {
+        if (mb_strtolower(mb_substr($auth, 0, 7)) !== 'bearer ') {
             Http::sendUnauthorized();
         }
 
