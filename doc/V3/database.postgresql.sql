@@ -34,6 +34,8 @@ create table articles
     foreign key (category) references categories
 );
 
+comment on column articles.inventoried is '-1 no inventory active, 0 not inventoried, 1 inventoried';
+
 --
 -- Table structure for table `lots`
 --
@@ -77,8 +79,6 @@ create table inventories (
   constraint inventories_id_pk
     primary key (id)
 );
-
-comment on column articles.inventoried is '-1 no inventory active, 0 not inventoried, 1 inventoried';
 
 --
 -- Table structure for table `log`
