@@ -1,6 +1,13 @@
 # inventory-api
 Little helper application to manage (cellar) inventory. (API)
 
+## Implementations
+
+This is the `sql` branch. The database access is implemented with relational SQL.  
+
+There is also a NoSQL (MongoDB) implementation on the [`main` branch](https://github.com/rhorber/inventory-api/tree/main).
+
+
 ## Documentation
 
 ### API
@@ -24,6 +31,7 @@ There are scripts for the MySQL/MariaDB and PostgreSQL dialects. Each major API 
 
 They are stored under `doc/V{major}/database.{dialect}.sql`.
 I.e. [doc/V1/database.postgresql.sql](./doc/V1/database.postgresql.sql).
+
 
 ## Credits
 
