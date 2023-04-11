@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 12.04.2023
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -18,7 +18,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 12.04.2023
  */
 class GtinController
 {
@@ -92,7 +92,7 @@ class GtinController
      * @return  array Response array with additional data, either of type "found", "notFound", or "error".
      * @access  private
      * @author  Raphael Horber
-     * @version 14.11.2021
+     * @version 12.04.2023
      */
     private function _queryOpenFoodFactsApi(string $gtin)
     {
@@ -111,7 +111,7 @@ class GtinController
                 ];
             }
 
-            $name = ($response->product->product_name_de !== "")
+            $name = (empty($response->product->product_name_de) === false)
                 ? $response->product->product_name_de
                 : $response->product->product_name;
 

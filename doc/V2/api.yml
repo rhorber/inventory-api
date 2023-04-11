@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Rhorber Inventory
   description: API of the Inventory by rhorber.
-  version: 2.1.0
+  version: 2.1.1
 
 servers:
   - url: /api/v2
@@ -119,6 +119,8 @@ paths:
       tags:
         - categories
       summary: Get all articles of a category
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
       responses:
         '200':
           description: Element `articles` containing array of articles
@@ -447,7 +449,6 @@ components:
           readOnly: true
         category:
           type: integer
-          required: true
         name:
           type: string
         size:

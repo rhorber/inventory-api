@@ -1,6 +1,6 @@
 {
     "name": "rhorber/inventory-api",
-    "description": "API for inventory application. (Application to manage (cellar) inventory.",
+    "description": "API for inventory application. (Application to manage (cellar) inventory.)",
     "type": "project",
     "keywords": ["inventory", "API"],
     "homepage": "https://github.com/rhorber/inventory-api",
