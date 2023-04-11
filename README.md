@@ -14,7 +14,7 @@ I.e. [doc/V1/api.html](./doc/V1/api.html). It is created with [ReDoc](https://gi
 To update an HTML file use the following command:
 
 ```bash
-$ npx redoc-cli bundle api.yml -o api.html
+$ npx @redocly/cli build-docs api.yml -o api.html
 ```
 
 ### Database structure
