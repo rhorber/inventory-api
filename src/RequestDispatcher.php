@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 04.08.2020
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 04.08.2020
+ * @version 01.05.2023
  */
 class RequestDispatcher
 {
@@ -39,17 +39,13 @@ class RequestDispatcher
      *
      * @access  private
      * @author  Raphael Horber
-     * @version 04.08.2020
+     * @version 01.05.2023
      */
     private function __construct()
     {
         $prefix = mb_substr($_SERVER['REQUEST_URI'], 0, 8);
 
-        if ($prefix === "/api/v1/") {
-            V1\ApiController::handleRequest();
-        } else if ($prefix === "/api/v2/") {
-            V2\ApiController::handleRequest();
-        } else if ($prefix === "/api/v3/") {
+        if ($prefix === "/api/v3/") {
             V3\ApiController::handleRequest();
         } else if ($_SERVER['REQUEST_URI'] === '/robots933456.txt') {
             // Dummy request from Azure App Service.
