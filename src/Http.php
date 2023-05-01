@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 01.05.2023
  */
 class Http
 {
@@ -252,30 +252,14 @@ class Http
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 21.11.2019
+     * @version 01.05.2023
      */
     private static function _logRequest()
     {
         $method  = mb_strtoupper($_SERVER['REQUEST_METHOD']);
         $content = sprintf('"%s %s" %d', $method, $_SERVER['REQUEST_URI'], http_response_code());
 
-        $query  = "
-            INSERT INTO log (
-                type, content, client_name, client_ip, user_agent
-            ) VALUES (
-                :type, :content, :clientName, :clientIp, :userAgent
-            )
-        ";
-        $values = [
-            ':type'       => 'request',
-            ':content'    => $content,
-            ':clientName' => Authorization::getClientName(),
-            ':clientIp'   => $_SERVER['REMOTE_ADDR'],
-            ':userAgent'  => $_SERVER['HTTP_USER_AGENT'],
-        ];
-
-        $database = new Database();
-        $database->prepareAndExecute($query, $values, false);
+        Database::newLogEntry("request", $content);
     }
 
     /**

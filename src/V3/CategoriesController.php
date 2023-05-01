@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 24.04.2022
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -20,7 +20,7 @@ use Rhorber\Inventory\API\V3\Entities\Category;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 24.04.2022
+ * @version 01.05.2023
  */
 class CategoriesController
 {
@@ -32,17 +32,26 @@ class CategoriesController
      */
     private $_database;
 
+    /**
+     * Collection `categories` of the database.
+     *
+     * @access private
+     * @var    \MongoDB\Collection
+     */
+    private $_categories;
+
 
     /**
-     * Constructor: Connects to the database.
+     * Initializes a new instance of the `CategoriesController` class.
      *
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function __construct()
     {
-        $this->_database = new Database();
+        $this->_database   = new Database();
+        $this->_categories = $this->_database->categories;
     }
 
     /**
@@ -51,15 +60,14 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
     public function returnAllCategories()
     {
-        $query = "SELECT * FROM categories";
-        $rows  = $this->_database->queryAndFetch($query);
+        $cursor = $this->_categories->find([]);
 
-        $categories = Category::mapToEntities($rows);
-        $response   = ['categories' => $categories];
+        $entities = Category::mapToEntities($cursor);
+        $response = ['categories' => $entities];
 
         Http::sendJsonResponse($response);
     }
@@ -72,41 +80,47 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
     public function returnCategory(int $categoryId)
     {
-        $query  = "SELECT * FROM categories WHERE id = :id";
-        $params = [':id' => $categoryId];
+        /** @var \MongoDB\Model\BSONDocument $category */
+        $category = $this->_categories->findOne(
+            ['_id' => $categoryId]
+        );
 
-        $statement = $this->_database->prepareAndExecute($query, $params);
-        $resultRow = $statement->fetch();
+        if ($category === null) {
+            Http::sendNotFound();
+        }
 
-        $category = Category::mapToEntity($resultRow);
+        $response = Category::mapToEntity($category);
 
-        Http::sendJsonResponse($category);
+        Http::sendJsonResponse($response);
     }
 
     /**
      * Returns all articles from the category as JSON response.
+     *
+     * This endpoint is not used by the current client app.
      *
      * @param integer $categoryId ID of the category to return the articles from.
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
     public function returnArticles(int $categoryId)
     {
-        $articlesQuery  = "SELECT * FROM articles WHERE category = :id";
-        $articlesParams = [':id' => $categoryId];
+        $filter   = [
+            'category' => $categoryId,
+        ];
+        $entities = ArticlesController::getArticleEntities(
+            $this->_database,
+            $filter
+        );
 
-        $articlesStatement = $this->_database->prepareAndExecute($articlesQuery, $articlesParams);
-        $articlesRows      = $articlesStatement->fetchAll();
-
-        $articles = ArticlesController::getArticlesWithLots($this->_database, $articlesRows);
-        $response = ['articles' => $articles];
+        $response = ['articles' => $entities];
 
         Http::sendJsonResponse($response);
     }
@@ -117,35 +131,30 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 24.04.2022
+     * @version 01.05.2023
      */
     public function createCategory()
     {
         $payload = Helpers::getPayload();
 
-        $maxQuery  = "
-            SELECT COALESCE(MAX(position), 0) + 1 AS new_position
-            FROM categories
-        ";
-        $maxResult = $this->_database->queryAndFetch($maxQuery);
+        $categoryId = $this->_database->getNextValue(
+            $this->_categories,
+            "_id"
+        );
+        $position   = $this->_database->getNextValue(
+            $this->_categories,
+            "position"
+        );
+        $timestamp  = $payload['timestamp'] ?? $this->_database->nowTimestamp;
 
-        $position  = $maxResult[0]['new_position'];
-        $timestamp = $payload['timestamp'] ?? time();
-
-        $insertQuery = "
-            INSERT INTO categories (
-                name, position, timestamp
-            ) VALUES (
-                :name, :position, :timestamp
-            )
-        ";
-        $params      = [
-            ':name'      => $payload['name'],
-            ':position'  => $position,
-            ':timestamp' => $timestamp,
+        $document = [
+            '_id'       => $categoryId,
+            'name'      => $payload['name'],
+            'position'  => $position,
+            'timestamp' => $timestamp,
         ];
+        $this->_categories->insertOne($document);
 
-        $this->_database->prepareAndExecute($insertQuery, $params);
         Http::sendNoContent();
     }
 
@@ -157,40 +166,32 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 24.04.2022
+     * @version 01.05.2023
      */
     public function updateCategory(int $categoryId)
     {
         $payload = Helpers::getPayload();
 
-        if (isset($payload['timestamp'])) {
-            $currentQuery  = "SELECT timestamp FROM categories WHERE id = :id";
-            $currentParams = [':id' => $categoryId];
+        $timestamp = $this->_database->getNewTimestamp(
+            $this->_categories,
+            $categoryId,
+            $payload['timestamp']
+        );
 
-            $currentStatement = $this->_database->prepareAndExecute($currentQuery, $currentParams);
-            $currentTimestamp = $currentStatement->fetchColumn(0);
-
-            $timestamp = $payload['timestamp'];
-            if ($timestamp < $currentTimestamp) {
-                Http::sendNoContent();
-            }
-        } else {
-            $timestamp = time();
+        // Update only if the category was not updated since this cached update.
+        if ($timestamp === false) {
+            Http::sendNoContent();
         }
 
-        $updateQuery  = "
-            UPDATE categories SET
-                name = :name,
-                timestamp = :timestamp
-            WHERE id = :id
-        ";
-        $updateParams = [
-            ':id'        => $categoryId,
-            ':name'      => $payload['name'],
-            ':timestamp' => $timestamp,
+        $updateFields = [
+            'name'      => $payload['name'],
+            'timestamp' => $timestamp,
         ];
+        $this->_categories->updateOne(
+            ['_id' => $categoryId],
+            ['$set' => $updateFields]
+        );
 
-        $this->_database->prepareAndExecute($updateQuery, $updateParams);
         Http::sendNoContent();
     }
 
@@ -202,11 +203,11 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function moveDown(int $categoryId)
     {
-        $this->_moveCategory($categoryId, "+");
+        $this->_moveCategory($categoryId, false);
     }
 
     /**
@@ -217,69 +218,49 @@ class CategoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function moveUp(int $categoryId)
     {
-        $this->_moveCategory($categoryId, "-");
+        $this->_moveCategory($categoryId, true);
     }
 
     /**
      * Moves the category one position up or down.
      *
      * @param integer $categoryId ID of the category to move.
-     * @param string  $direction  Direction of this category ("+" or "-" for down or up respectively).
+     * @param boolean $moveUp     Whether to move the document up (decrease position).
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
-    private function _moveCategory(int $categoryId, string $direction)
+    private function _moveCategory(int $categoryId, bool $moveUp)
     {
-        $positionQuery  = "SELECT position FROM categories WHERE id = :id";
-        $positionParams = [':id' => $categoryId];
+        // Get position of the category to move.
+        $category = $this->_categories->findOne(
+            ['_id' => $categoryId],
+            ['projection' => ['position' => 1]]
+        );
 
-        $positionStatement = $this->_database->prepareAndExecute($positionQuery, $positionParams);
-        $thisCategory      = $positionStatement->fetch();
+        // Move categories.
+        $categories = $this->_database->moveDocument(
+            $this->_categories,
+            $categoryId,
+            $category['position'],
+            $moveUp,
+            []
+        );
 
-        // Calculate the positions.
-        // `eval` can safely be used because `$direction` comes from a trusted source.
-        $thisPosition   = $thisCategory['position'];
-        $otherPosition  = eval("return ".$thisPosition." ".$direction." 1;");
-        $positionParams = [
-            ':thisPosition'  => $thisPosition,
-            ':otherPosition' => $otherPosition,
-        ];
+        // Proceed only if any categories were moved.
+        if ($categories === false) {
+            Http::sendBadRequest();
+        }
 
-        $moveOtherQuery = "
-            UPDATE categories SET
-                position = :thisPosition
-            WHERE position = :otherPosition
-        ";
-        $this->_database->prepareAndExecute($moveOtherQuery, $positionParams);
-
-        $moveThisQuery  = "
-            UPDATE categories SET
-                position = :otherPosition
-            WHERE id = :id
-        ";
-        $moveThisParams = [
-            ':id'            => $categoryId,
-            ':otherPosition' => $otherPosition,
-        ];
-        $this->_database->prepareAndExecute($moveThisQuery, $moveThisParams);
-
-        $responseQuery     = "
-            SELECT *
-            FROM categories
-            WHERE position IN(:thisPosition, :otherPosition)
-        ";
-        $responseStatement = $this->_database->prepareAndExecute($responseQuery, $positionParams);
-        $resultRows        = $responseStatement->fetchAll();
-
-        $categories = Category::mapToEntities($resultRows);
-        $response   = ['categories' => $categories];
+        // Return the updated categories.
+        $entities = Category::mapToEntities($categories);
+        $response = ['categories' => $entities];
 
         Http::sendJsonResponse($response);
     }

@@ -47,7 +47,7 @@ class RequestDispatcher
 
         if ($prefix === "/api/v3/") {
             V3\ApiController::handleRequest();
-        } else if ($_SERVER['REQUEST_URI'] === '/robots933456.txt') {
+        } elseif ($_SERVER['REQUEST_URI'] === '/robots933456.txt') {
             // Dummy request from Azure App Service.
             // See: https://learn.microsoft.com/en-gb/azure/app-service/configure-language-php?pivots=platform-linux#robots933456-in-logs
             Http::sendNoContent();

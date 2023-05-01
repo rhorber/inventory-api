@@ -5,16 +5,19 @@
  *
  * @package Rhorber\Inventory\API\V3\Entities
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API\V3\Entities;
+
+use MongoDB\Model\BSONDocument;
+
 
 /**
  * Lot entity. A lot is the items of an article with the same (or unknown) best before date.
  *
  * @package Rhorber\Inventory\API\V3\Entities
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 01.05.2023
  */
 class Lot extends Entity
 {
@@ -48,24 +51,24 @@ class Lot extends Entity
 
 
     /**
-     * Maps/processes the query result row to an entity/object instance.
+     * Maps/processes the query result document to an entity/object instance.
      *
-     * @param array $row Query result row to process.
+     * @param BSONDocument $document Query result document to process.
      *
-     * @return  Lot An instance of the entity with the parsed properties.
+     * @return  Lot A `Lot` entity instance with the parsed properties.
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
-    public static function mapToEntity(array $row)
+    public static function mapToEntity(BSONDocument $document)
     {
         $lot              = new Lot();
-        $lot->id          = intval($row['id']);
-        $lot->article     = intval($row['article']);
-        $lot->best_before = $row['best_before'];
-        $lot->stock       = intval($row['stock']);
-        $lot->position    = intval($row['position']);
-        $lot->timestamp   = intval($row['timestamp']);
+        $lot->id          = $document['_id'];
+        $lot->article     = $document['article'];
+        $lot->best_before = $document['bestBefore'];
+        $lot->stock       = $document['stock'];
+        $lot->position    = $document['position'];
+        $lot->timestamp   = $document['timestamp'];
 
         return $lot;
     }
