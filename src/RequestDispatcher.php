@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.05.2023
+ * @version 06.05.2023
  */
 namespace Rhorber\Inventory\API;
 
@@ -17,7 +17,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 01.05.2023
+ * @version 06.05.2023
  */
 class RequestDispatcher
 {
@@ -39,18 +39,24 @@ class RequestDispatcher
      *
      * @access  private
      * @author  Raphael Horber
-     * @version 01.05.2023
+     * @version 06.05.2023
      */
     private function __construct()
     {
+        $requestUri = $_SERVER['REQUEST_URI'];
+
+        if (in_array($requestUri, ['/', '/index.php'], true)) {
+            Http::sendJsonResponse(["Hello, World!"]);
+        } elseif ($requestUri === "/robots933456.txt") {
+            // Dummy request from Azure App Service.
+            // See: https://learn.microsoft.com/en-gb/azure/app-service/configure-language-php?pivots=platform-linux#robots933456-in-logs
+            Http::sendNoContent();
+        }
+
         $prefix = mb_substr($_SERVER['REQUEST_URI'], 0, 8);
 
         if ($prefix === "/api/v3/") {
             V3\ApiController::handleRequest();
-        } elseif ($_SERVER['REQUEST_URI'] === '/robots933456.txt') {
-            // Dummy request from Azure App Service.
-            // See: https://learn.microsoft.com/en-gb/azure/app-service/configure-language-php?pivots=platform-linux#robots933456-in-logs
-            Http::sendNoContent();
         }
 
         Http::sendNotFound();
