@@ -1,6 +1,13 @@
 # inventory-api
 Little helper application to manage (cellar) inventory. (API)
 
+## Implementations
+
+This is the `main` branch. The database access is implemented with NoSQL (MongoDB).
+
+There is also a relational SQL implementation on the [`sql` branch](https://github.com/rhorber/inventory-api/tree/sql).
+
+
 ## Documentation
 
 ### API
@@ -24,6 +31,7 @@ Only the `createIndex` commands would be necessary, but the `createCollection` c
 to document the expected collections.
 
 Currently, only `V3` contains one because `V3` it is the only version implemented with MongoDB at the moment.
+
 
 ## Credits
 
