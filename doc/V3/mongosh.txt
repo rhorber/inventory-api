@@ -1,0 +1,13 @@
+use inventory
+
+db.createCollection("logs")
+db.createCollection("tokens")
+db.createCollection("inventories")
+
+db.createCollection("categories")
+db.createCollection("articles")
+db.createCollection("lots")
+
+db.categories.createIndex({"position": 1})
+db.articles.createIndex({"position": 1})
+db.lots.createIndex({"position": 1})
