@@ -13,10 +13,10 @@ There is also a NoSQL (MongoDB) implementation on the [`main` branch](https://gi
 ### API
 
 The API is documented as OpenAPI Specification documents. Each major API version is saved separately.
-They are stored under `doc/V{major}/api.yml`. I.e. [doc/V1/api.yml](./doc/V1/api.yml).
+They are stored under `doc/V{major}/api.yml`. E.g. [doc/V1/api.yml](./doc/V1/api.yml).
 
 The generated documentation is a zero-dependency file and stored under `doc/V{major}/api.html`.
-I.e. [doc/V1/api.html](./doc/V1/api.html). It is created with [ReDoc](https://github.com/Redocly/redoc).
+E.g. [doc/V1/api.html](./doc/V1/api.html). It is created with [ReDoc](https://github.com/Redocly/redoc).
 
 To update an HTML file use the following command:
 
@@ -30,7 +30,7 @@ There are SQL scripts to scaffold a database. These do also serve to document th
 There are scripts for the MySQL/MariaDB and PostgreSQL dialects. Each major API version is saved separately.
 
 They are stored under `doc/V{major}/database.{dialect}.sql`.
-I.e. [doc/V1/database.postgresql.sql](./doc/V1/database.postgresql.sql).
+E.g. [doc/V1/database.postgresql.sql](./doc/V1/database.postgresql.sql).
 
 
 ## Credits
