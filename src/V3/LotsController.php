@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 24.04.2022
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -18,14 +18,14 @@ use Rhorber\Inventory\API\V3\Entities\Lot;
 /**
  * Class for modifying or adding a lot (part or complete stock of an article). All methods terminate execution.
  *
- * To keep it simple (circumvent conversions) and provide compatibility between ECMAScript, PostgreSQL and MySQL
+ * To keep it simple (circumvent conversions) and provide compatibility between ECMAScript and MongoDB
  * the following design decisions were made:
  * - The current timestamp (last update) of a lot is stored as an integer (in seconds).
  * - PHP provides/sets the update values.
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 24.04.2022
+ * @version 01.05.2023
  */
 class LotsController
 {
@@ -37,105 +37,103 @@ class LotsController
      */
     private $_database;
 
+    /**
+     * Collection `lots` of the database.
+     *
+     * @access private
+     * @var    \MongoDB\Collection
+     */
+    private $_lots;
+
 
     /**
-     * Constructor: Connects to the database.
+     * Initializes a new instance of the `LotsController` class.
      *
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function __construct()
     {
         $this->_database = new Database();
+        $this->_lots     = $this->_database->lots;
     }
 
     /**
      * Adds a new lot from payload.
      *
+     * This endpoint is not used by the current client app.
+     *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 24.04.2022
+     * @version 01.05.2023
      */
     public function createLot()
     {
         $payload = Helpers::getPayload();
 
-        $maxQuery     = "
-            SELECT COALESCE(MAX(position), 0) + 1 AS new_position
-            FROM lots
-            WHERE article = :article
-        ";
-        $maxParams    = [':article' => $payload['article']];
-        $maxStatement = $this->_database->prepareAndExecute($maxQuery, $maxParams);
+        $lotId     = $this->_database->getNextValue(
+            $this->_lots,
+            "_id"
+        );
+        $position  = $this->_database->getNextValue(
+            $this->_lots,
+            "position",
+            ['article' => $payload['article']]
+        );
+        $timestamp = $payload['timestamp'] ?? $this->_database->nowTimestamp;
 
-        $position  = $maxStatement->fetchColumn(0);
-        $timestamp = $payload['timestamp'] ?? time();
-
-        $insertQuery  = "
-            INSERT INTO lots (
-                article, best_before, stock, position, timestamp
-            ) VALUES (
-                :article, :best_before, :stock, :position, :timestamp
-            )
-        ";
-        $insertParams = [
-            ':article'     => $payload['article'],
-            ':best_before' => $payload['best_before'],
-            ':stock'       => $payload['stock'],
-            ':position'    => $position,
-            ':timestamp'   => $timestamp,
+        $document = [
+            '_id'        => $lotId,
+            'article'    => $payload['article'],
+            'bestBefore' => $payload['best_before'],
+            'stock'      => $payload['stock'],
+            'position'   => $position,
+            'timestamp'  => $timestamp,
         ];
+        $this->_lots->insertOne($document);
 
-        $this->_database->prepareAndExecute($insertQuery, $insertParams);
         Http::sendNoContent();
     }
 
     /**
      * Updates the lot from payload.
      *
+     * This endpoint is not used by the current client app.
+     *
      * @param integer $lotId ID of the lot to update.
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 24.04.2022
+     * @version 01.05.2023
      */
     public function updateLot(int $lotId)
     {
         $payload = Helpers::getPayload();
 
-        if (isset($payload['timestamp'])) {
-            $currentQuery  = "SELECT timestamp FROM lots WHERE id = :id";
-            $currentParams = [':id' => $lotId];
+        $timestamp = $this->_database->getNewTimestamp(
+            $this->_lots,
+            $lotId,
+            $payload['timestamp']
+        );
 
-            $currentStatement = $this->_database->prepareAndExecute($currentQuery, $currentParams);
-            $currentTimestamp = $currentStatement->fetchColumn(0);
-
-            $timestamp = $payload['timestamp'];
-            if ($timestamp < $currentTimestamp) {
-                Http::sendNoContent();
-            }
-        } else {
-            $timestamp = time();
+        // Update only if the lot was not updated since this cached update.
+        if ($timestamp === false) {
+            Http::sendNoContent();
         }
 
-        $updateQuery  = "
-            UPDATE lots SET
-                best_before = :best_before,
-                stock = :stock,
-                timestamp = :timestamp
-            WHERE id = :id
-        ";
-        $updateParams = [
-            ':id'          => $lotId,
-            ':best_before' => $payload['best_before'],
-            ':stock'       => $payload['stock'],
-            ':timestamp'   => $timestamp,
+        $updateFields = [
+            'bestBefore' => $payload['best_before'],
+            'stock'      => $payload['stock'],
+            'timestamp'  => $timestamp,
         ];
+        $this->_lots->updateOne(
+            ['_id' => $lotId],
+            ['$set' => $updateFields]
+        );
 
-        $this->_database->prepareAndExecute($updateQuery, $updateParams);
         Http::sendNoContent();
     }
 
@@ -147,11 +145,11 @@ class LotsController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function decrementStock(int $lotId)
     {
-        $this->_modifyStock($lotId, "stock - 1");
+        $this->_modifyStock($lotId, -1);
     }
 
     /**
@@ -162,167 +160,115 @@ class LotsController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function incrementStock(int $lotId)
     {
-        $this->_modifyStock($lotId, "stock + 1");
+        $this->_modifyStock($lotId, 1);
     }
 
     /**
      * Moves the lot one position down.
      *
+     * This endpoint is not used by the current client app.
+     *
      * @param integer $lotId ID of the lot to move.
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function moveDown(int $lotId)
     {
-        $this->_moveLot($lotId, ">", "ASC");
+        $this->_moveLot($lotId, false);
     }
 
     /**
      * Moves the lot one position up.
      *
+     * This endpoint is not used by the current client app.
+     *
      * @param integer $lotId ID of the lot to move.
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function moveUp(int $lotId)
     {
-        $this->_moveLot($lotId, "<", "DESC");
+        $this->_moveLot($lotId, true);
     }
 
     /**
      * Shorthand method for modifying the lot's stock.
      *
-     * @param integer $lotId    ID of the lot to modify.
-     * @param string  $newStock Stock's new value.
+     * @param integer $lotId  ID of the lot to modify.
+     * @param int     $amount Increment the stock by this amount (can be positive or negative).
      *
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
-    private function _modifyStock(int $lotId, string $newStock)
+    private function _modifyStock(int $lotId, int $amount)
     {
-        $query  = "
-            UPDATE lots SET
-                stock = ".$newStock.",
-                timestamp = :timestamp
-            WHERE id = :id
-        ";
-        $params = [
-            ':id'        => $lotId,
-            ':timestamp' => time(),
+        /** @var \MongoDB\Model\BSONDocument $lot */
+        $update = [
+            '$inc' => ['stock' => $amount],
+            '$set' => ['timestamp' => $this->_database->nowTimestamp],
         ];
+        $lot    = $this->_lots->findOneAndUpdate(
+            ['_id' => $lotId],
+            $update,
+            ['returnDocument' => Database::$returnDocumentAfter]
+        );
 
-        $this->_database->prepareAndExecute($query, $params);
+        $response = Lot::mapToEntity($lot);
 
-        $responseQuery     = "
-            SELECT *
-            FROM lots
-            WHERE id = :id
-        ";
-        $responseParams    = [':id' => $lotId];
-        $responseStatement = $this->_database->prepareAndExecute($responseQuery, $responseParams);
-        $resultRow         = $responseStatement->fetch();
-
-        $lot = Lot::mapToEntity($resultRow);
-
-        Http::sendJsonResponse($lot);
+        Http::sendJsonResponse($response);
     }
 
     /**
      * Moves the lot one position up or down.
      *
-     * @param integer $lotId           ID of the lot to move.
-     * @param string  $compareOperator Comparator used to find the other lot to swap with
-     *                                 (">" or "<" for down or up respectively).
-     * @param string  $sortDirection   Sort direction used to find the other lot to swap with
-     *                                 ("ASC" or "DESC" for down or up respectively).
+     * @param integer $lotId  ID of the lot to move.
+     * @param boolean $moveUp Whether to move the document up (decrease position).
      *
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
-    private function _moveLot(int $lotId, string $compareOperator, string $sortDirection)
+    private function _moveLot(int $lotId, bool $moveUp)
     {
-        $queryThisQuery  = "
-            SELECT article, position
-            FROM lots
-            WHERE id = :id
-        ";
-        $queryThisParams = [':id' => $lotId];
+        // Get properties of the lot to move.
+        $lot = $this->_lots->findOne(
+            ['_id' => $lotId],
+            ['projection' => ['article' => 1, 'position' => 1]]
+        );
 
-        $thisStatement = $this->_database->prepareAndExecute($queryThisQuery, $queryThisParams);
-        $thisLot       = $thisStatement->fetch();
-
-        $queryOtherQuery  = "
-            SELECT id, position
-            FROM lots
-            WHERE article = :article
-                AND position ".$compareOperator." :position
-            ORDER BY position ".$sortDirection."
-            LIMIT 1
-        ";
-        $queryOtherParams = [
-            ':article'  => $thisLot['article'],
-            ':position' => $thisLot['position'],
+        // Move lots.
+        $filter = [
+            'article' => $lot['article'],
         ];
+        $lots   = $this->_database->moveDocument(
+            $this->_lots,
+            $lotId,
+            $lot['position'],
+            $moveUp,
+            $filter
+        );
 
-        $otherStatement = $this->_database->prepareAndExecute($queryOtherQuery, $queryOtherParams);
-        $otherLot       = $otherStatement->fetch();
+        // Proceed only if any lots were moved.
+        if ($lots === false) {
+            Http::sendBadRequest();
+        }
 
-        $moveThisQuery     = "
-            UPDATE lots SET
-                position = :position,
-                timestamp = :timestamp
-            WHERE id = :id
-        ";
-        $moveThisStatement = $this->_database->prepare($moveThisQuery);
-
-        $moveThisParams = [
-            ':id'        => $lotId,
-            ':position'  => $otherLot['position'],
-            ':timestamp' => time(),
-        ];
-        $moveThisStatement->execute($moveThisParams);
-
-        $moveOtherQuery     = "
-            UPDATE lots SET
-                position = :position
-            WHERE id = :id
-        ";
-        $moveOtherStatement = $this->_database->prepare($moveOtherQuery);
-
-        $moveOtherParams = [
-            ':id'       => $otherLot['id'],
-            ':position' => $thisLot['position'],
-        ];
-        $moveOtherStatement->execute($moveOtherParams);
-
-        $responseQuery     = "
-            SELECT *
-            FROM lots
-            WHERE id IN(:thisId, :otherId)
-        ";
-        $responseParams    = [
-            ':thisId'  => $lotId,
-            ':otherId' => $otherLot['id'],
-        ];
-        $responseStatement = $this->_database->prepareAndExecute($responseQuery, $responseParams);
-        $resultRows        = $responseStatement->fetchAll();
-
-        $lots     = Lot::mapToEntities($resultRows);
-        $response = ['lots' => $lots];
+        // Return the updated lots.
+        $entities = Lot::mapToEntities($lots);
+        $response = ['lots' => $entities];
 
         Http::sendJsonResponse($response);
     }

@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 12.04.2023
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -18,7 +18,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 12.04.2023
+ * @version 01.05.2023
  */
 class GtinController
 {
@@ -32,7 +32,7 @@ class GtinController
 
 
     /**
-     * Constructor: Connects to the database.
+     * Initializes a new instance of the `GtinController` class.
      *
      * @access  public
      * @author  Raphael Horber
@@ -54,26 +54,25 @@ class GtinController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
     public function query(string $gtin)
     {
-        $query     = "
-            SELECT article
-            FROM gtins
-            WHERE gtin = :gtin
-        ";
-        $params    = [
-            ':gtin' => $gtin,
+        $filter   = [
+            'gtins' => $gtin,
         ];
-        $statement = $this->_database->prepareAndExecute($query, $params);
+        $document = $this->_database->getCountAndFirstField(
+            $this->_database->articles,
+            $filter,
+            "_id"
+        );
 
-        if ($statement->rowCount() === 1) {
-            $articleId = $statement->fetchColumn(0);
+        if ($document['count'] === 1) {
+            $articleId = $document['_id'];
 
             $response = [
                 'type'      => "existing",
-                'articleId' => intval($articleId),
+                'articleId' => $articleId,
             ];
         } else {
             $response = $this->_queryOpenFoodFactsApi($gtin);
@@ -135,8 +134,8 @@ class GtinController
      * @param string $country Country code to query.
      *
      * @return  \stdClass API response, decoded.
-     * @access  private
      * @throws  \Exception If a cURL error occurred.
+     * @access  private
      * @version 14.11.2021
      * @author  Raphael Horber
      */

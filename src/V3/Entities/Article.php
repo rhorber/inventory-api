@@ -5,16 +5,19 @@
  *
  * @package Rhorber\Inventory\API\V3\Entities
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API\V3\Entities;
+
+use MongoDB\Model\BSONDocument;
+
 
 /**
  * Article entity. An article is an item, optionally with its lots and GTINs.
  *
  * @package Rhorber\Inventory\API\V3\Entities
  * @author  Raphael Horber
- * @version 04.04.2022
+ * @version 01.05.2023
  */
 class Article extends Entity
 {
@@ -76,34 +79,31 @@ class Article extends Entity
 
 
     /**
-     * Maps/processes the query result row to an entity/object instance.
+     * Maps/processes the query result document to an entity/object instance.
      *
-     * @param array $row Query result row to process.
+     * @param BSONDocument $document Query result document to process.
      *
-     * @return  Article An instance of the entity with the parsed properties.
+     * @return  Article An `Article` entity instance with the parsed properties.
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
-    public static function mapToEntity(array $row)
+    public static function mapToEntity(BSONDocument $document)
     {
         $article              = new Article();
-        $article->id          = intval($row['id']);
-        $article->category    = intval($row['category']);
-        $article->name        = $row['name'];
-        $article->size        = floatval($row['size']);
-        $article->unit        = $row['unit'];
-        $article->inventoried = intval($row['inventoried']);
-        $article->position    = intval($row['position']);
-        $article->timestamp   = intval($row['timestamp']);
+        $article->id          = $document['_id'];
+        $article->category    = $document['category'];
+        $article->name        = $document['name'];
+        $article->size        = $document['size'];
+        $article->unit        = $document['unit'];
+        $article->inventoried = $document['inventoried'];
+        $article->position    = $document['position'];
+        $article->timestamp   = $document['timestamp'];
         $article->lots        = [];
+        $article->gtins       = $document['gtins'];
 
-        if (empty($row['lots']) === false) {
-            $article->lots = Lot::mapToEntities($row['lots']);
-        }
-
-        if (isset($row['gtins']) === true) {
-            $article->gtins = $row['gtins'];
+        if (empty($document['lots']) === false) {
+            $article->lots = Lot::mapToEntities($document['lots']);
         }
 
         return $article;

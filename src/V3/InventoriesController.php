@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 12.08.2021
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -18,7 +18,7 @@ use Rhorber\Inventory\API\Http;
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 12.08.2021
+ * @version 01.05.2023
  */
 class InventoriesController
 {
@@ -30,41 +30,45 @@ class InventoriesController
      */
     private $_database;
 
+    /**
+     * Collection `inventories` of the database.
+     *
+     * @access private
+     * @var    \MongoDB\Collection
+     */
+    private $_inventories;
+
 
     /**
-     * Returns whether an inventory (stocktaking) is active/running or not.
+     * Returns whether an inventory (stocktaking) is active/running.
      *
      * @param Database $database Database connection.
      *
      * @return  boolean Whether an inventory is active.
      * @access  public
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 01.05.2023
      */
     public static function isInventoryActive(Database $database): bool
     {
-        $query = "
-            SELECT COUNT(*) AS count
-            FROM inventories
-            WHERE stop IS NULL
-        ";
+        $inventory = $database->inventories->findOne(
+            ['stop' => ['$exists' => false]]
+        );
 
-        $inventories = $database->prepareAndExecute($query, []);
-        $count       = $inventories->fetchColumn(0);
-
-        return ($count > 0);
+        return ($inventory !== null);
     }
 
     /**
-     * Constructor: Connects to the database.
+     * Initializes a new instance of the `InventoriesController` class.
      *
      * @access  public
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 01.05.2023
      */
     public function __construct()
     {
-        $this->_database = new Database();
+        $this->_database    = new Database();
+        $this->_inventories = $this->_database->inventories;
     }
 
     /**
@@ -73,13 +77,16 @@ class InventoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 01.05.2023
      */
     public function status()
     {
-        $status = (self::isInventoryActive($this->_database)) ? "active" : "inactive";
+        $status = (self::isInventoryActive($this->_database))
+            ? "active"
+            : "inactive";
 
         $response = ['status' => $status];
+
         Http::sendJsonResponse($response);
     }
 
@@ -89,23 +96,16 @@ class InventoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 01.05.2023
      */
     public function start()
     {
         $this->_updateAllArticles(0);
 
-        $query  = "
-            INSERT INTO inventories (
-                start, stop
-            ) VALUES (
-                :timestamp, NULL
-            )
-        ";
-        $params = [
-            ':timestamp' => time(),
+        $document = [
+            'start' => $this->_database->nowDateTime,
         ];
-        $this->_database->prepareAndExecute($query, $params);
+        $this->_inventories->insertOne($document);
 
         Http::sendNoContent();
     }
@@ -116,21 +116,19 @@ class InventoriesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 01.05.2023
      */
     public function stop()
     {
         $this->_updateAllArticles(-1);
 
-        $inventoryQuery  = "
-            UPDATE inventories SET
-                stop = :timestamp
-            WHERE stop IS NULL
-        ";
-        $inventoryParams = [
-            ':timestamp' => time(),
+        $updateFields = [
+            'stop' => $this->_database->nowDateTime,
         ];
-        $this->_database->prepareAndExecute($inventoryQuery, $inventoryParams);
+        $this->_inventories->updateOne(
+            ['stop' => ['$exists' => false]],
+            ['$set' => $updateFields]
+        );
 
         Http::sendNoContent();
     }
@@ -143,17 +141,17 @@ class InventoriesController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 01.05.2023
      */
     private function _updateAllArticles(int $status)
     {
-        $query  = "
-            UPDATE articles SET
-                inventoried = :status
-        ";
-        $params = [':status' => $status];
-
-        $this->_database->prepareAndExecute($query, $params);
+        $updateFields = [
+            'inventoried' => $status,
+        ];
+        $this->_database->articles->updateMany(
+            [],
+            ['$set' => $updateFields]
+        );
     }
 }
 

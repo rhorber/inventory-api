@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 30.03.2019
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API;
 
@@ -15,7 +15,7 @@ namespace Rhorber\Inventory\API;
  *
  * @package Rhorber\Inventory\API
  * @author  Raphael Horber
- * @version 30.03.2019
+ * @version 01.05.2023
  */
 class Authorization
 {
@@ -80,28 +80,28 @@ class Authorization
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 30.03.2019
+     * @version 01.05.2023
      */
     private function _verifyToken(string $authorization)
     {
-        $token = substr($authorization, 7);
+        $token    = mb_substr($authorization, 7);
+        $database = new Database();
 
-        $query  = "
-            SELECT name
-            FROM tokens
-            WHERE token = :token AND active = 1
-        ";
-        $values = [':token' => $token];
+        $filter   = [
+            'token'  => $token,
+            'active' => true,
+        ];
+        $document = $database->getCountAndFirstField(
+            $database->tokens,
+            $filter,
+            "name"
+        );
 
-        $database  = new Database();
-        $statement = $database->prepareAndExecute($query, $values);
-
-        if ($statement->rowCount() !== 1) {
+        if ($document['count'] !== 1) {
             Http::sendUnauthorized();
         }
-        $row = $statement->fetch();
 
-        self::$_clientName = $row['name'];
+        self::$_clientName = $document['name'];
     }
 }
 

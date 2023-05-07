@@ -5,7 +5,7 @@
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 24.04.2022
+ * @version 01.05.2023
  */
 namespace Rhorber\Inventory\API\V3;
 
@@ -18,14 +18,14 @@ use Rhorber\Inventory\API\V3\Entities\Article;
 /**
  * Class for modifying or adding an article. All methods terminate execution.
  *
- * To keep it simple (circumvent conversions) and provide compatibility between ECMAScript, PostgreSQL and MySQL
+ * To keep it simple (circumvent conversions) and provide compatibility between ECMAScript and MongoDB
  * the following design decisions were made:
  * - The current timestamp (last update) of an article is stored as an integer (in seconds).
  * - PHP provides/sets the update values.
  *
  * @package Rhorber\Inventory\API\V3
  * @author  Raphael Horber
- * @version 24.04.2022
+ * @version 01.05.2023
  */
 class ArticlesController
 {
@@ -37,47 +37,56 @@ class ArticlesController
      */
     private $_database;
 
+    /**
+     * Collection `articles` of the database.
+     *
+     * @access private
+     * @var    \MongoDB\Collection
+     */
+    private $_articles;
+
 
     /**
-     * Returns an array of Article entities. Based from the articles result rows.
+     * Returns the articles matching the filter as an array of Article entities.
      *
-     * It maps the articles result rows to entities, queries the lots of each article,
-     * and sets the property `lots` with the found `Lot` entities.
+     * It searches the articles collection with the passed filter,
+     * maps the found documents to entities and returns the resulting array.
      *
-     * @param Database $database     Database connection.
-     * @param array    $articlesRows Result rows, from an articles query, to process.
+     * @param Database $database Database connection.
+     * @param array    $filter   Filter articles by this query. This value is passed to the `$match` aggregation stage.
      *
-     * @return  Article[] Array of Article entities, with property `lots` set (property `gtin` is not set).
+     * @return  Article[] Array of Article entities, with properties `lots` and `gtins` set.
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
-    public static function getArticlesWithLots(Database $database, array $articlesRows)
+    public static function getArticleEntities(Database $database, array $filter)
     {
-        $articleRows   = [];
-        $lotsQuery     = "SELECT * FROM lots WHERE article = :id";
-        $lotsStatement = $database->prepare($lotsQuery);
+        $lookup = [
+            'from'         => "lots",
+            'localField'   => "_id",
+            'foreignField' => "article",
+            'as'           => "lots",
+        ];
+        $cursor = $database->articles->aggregate([
+            ['$match' => $filter],
+            ['$lookup' => $lookup],
+        ]);
 
-        foreach ($articlesRows as $articleRow) {
-            $lotsParams         = [':id' => $articleRow['id']];
-            $articleRow['lots'] = $database->executeAndFetchAll($lotsStatement, $lotsParams);
-
-            $articleRows[] = $articleRow;
-        }
-
-        return Article::mapToEntities($articleRows);
+        return Article::mapToEntities($cursor);
     }
 
     /**
-     * Constructor: Connects to the database.
+     * Initializes a new instance of the `ArticlesController` class.
      *
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function __construct()
     {
         $this->_database = new Database();
+        $this->_articles = $this->_database->articles;
     }
 
     /**
@@ -86,15 +95,19 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 04.04.2022
+     * @version 01.05.2023
      */
     public function returnAllArticles()
     {
-        $articlesQuery = "SELECT * FROM articles";
-        $articlesRows  = $this->_database->queryAndFetch($articlesQuery);
+        $filter   = [
+            '_id' => ['$exists' => true],
+        ];
+        $entities = self::getArticleEntities(
+            $this->_database,
+            $filter
+        );
 
-        $articles = self::getArticlesWithLots($this->_database, $articlesRows);
-        $response = ['articles' => $articles];
+        $response = ['articles' => $entities];
 
         Http::sendJsonResponse($response);
     }
@@ -107,13 +120,25 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 20.08.2020
+     * @version 01.05.2023
      */
     public function returnArticle(int $articleId)
     {
-        $article = $this->_getArticle($articleId);
+        $filter   = [
+            '_id' => $articleId,
+        ];
+        $entities = self::getArticleEntities(
+            $this->_database,
+            $filter
+        );
 
-        Http::sendJsonResponse($article);
+        if (count($entities) <= 0) {
+            Http::sendNotFound();
+        }
+
+        $response = array_pop($entities);
+
+        Http::sendJsonResponse($response);
     }
 
     /**
@@ -122,42 +147,35 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 24.04.2022
+     * @version 01.05.2023
      */
     public function createArticle()
     {
         $payload = Helpers::getPayload();
 
+        $articleId   = $this->_database->getNextValue(
+            $this->_articles,
+            "_id"
+        );
         $inventoried = $this->_getInventoriedStatus();
         $position    = $this->_getNextPositionInCategory($payload['category']);
-        $timestamp   = $payload['timestamp'] ?? time();
+        $timestamp   = $payload['timestamp'] ?? $this->_database->nowTimestamp;
 
-        $insertQuery  = "
-            INSERT INTO articles (
-                category, name, size, unit, inventoried, position, timestamp
-            ) VALUES (
-                :category, :name, :size, :unit, :inventoried, :position, :timestamp
-            )
-        ";
-        $insertParams = [
-            ':category'    => $payload['category'],
-            ':name'        => $payload['name'],
-            ':size'        => $payload['size'],
-            ':unit'        => $payload['unit'],
-            ':inventoried' => $inventoried,
-            ':position'    => $position,
-            ':timestamp'   => $timestamp,
+        $document = [
+            '_id'         => $articleId,
+            'category'    => $payload['category'],
+            'name'        => $payload['name'],
+            'size'        => $payload['size'],
+            'unit'        => $payload['unit'],
+            'gtins'       => $payload['gtins'],
+            'inventoried' => $inventoried,
+            'position'    => $position,
+            'timestamp'   => $timestamp,
         ];
-        $this->_database->prepareAndExecute($insertQuery, $insertParams);
-
-        $articleId = $this->_database->lastInsertId();
+        $this->_articles->insertOne($document);
 
         if (isset($payload['lots'])) {
             $this->_insertLots($articleId, $payload['lots']);
-        }
-
-        if (isset($payload['gtins'])) {
-            $this->_insertGtins($articleId, $payload['gtins']);
         }
 
         Http::sendNoContent();
@@ -171,17 +189,27 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 24.04.2022
+     * @version 01.05.2023
      */
     public function updateArticle(int $articleId)
     {
         $payload = Helpers::getPayload();
 
-        $currentQuery  = "SELECT category, position, timestamp FROM articles WHERE id = :id";
-        $currentParams = [':id' => $articleId];
+        $timestamp = $this->_database->getNewTimestamp(
+            $this->_articles,
+            $articleId,
+            $payload['timestamp']
+        );
 
-        $currentStatement = $this->_database->prepareAndExecute($currentQuery, $currentParams);
-        $currentArticle   = $currentStatement->fetch();
+        // Update only if the article was not updated since this cached update.
+        if ($timestamp === false) {
+            Http::sendNoContent();
+        }
+
+        $currentArticle = $this->_articles->findOne(
+            ['_id' => $articleId],
+            ['projection' => ['category' => 1, 'position' => 1]]
+        );
 
         $inventoried = $this->_getInventoriedStatus();
 
@@ -191,59 +219,27 @@ class ArticlesController
             $articlePosition = $currentArticle['position'];
         }
 
-        if (isset($payload['timestamp'])) {
-            $timestamp = $payload['timestamp'];
-
-            if ($timestamp < $currentArticle['timestamp']) {
-                Http::sendNoContent();
-            }
-        } else {
-            $timestamp = time();
-        }
-
-        $updateQuery  = "
-            UPDATE articles SET
-                category = :category,
-                name = :name,
-                size = :size,
-                unit = :unit,
-                inventoried = :inventoried,
-                position = :position,
-                timestamp = :timestamp
-            WHERE id = :id
-        ";
-        $updateParams = [
-            ':id'          => $articleId,
-            ':category'    => $payload['category'],
-            ':name'        => $payload['name'],
-            ':size'        => $payload['size'],
-            ':unit'        => $payload['unit'],
-            ':inventoried' => $inventoried,
-            ':position'    => $articlePosition,
-            ':timestamp'   => $timestamp,
+        $updateFields = [
+            'category'    => $payload['category'],
+            'name'        => $payload['name'],
+            'size'        => $payload['size'],
+            'unit'        => $payload['unit'],
+            'gtins'       => $payload['gtins'],
+            'inventoried' => $inventoried,
+            'position'    => $articlePosition,
+            'timestamp'   => $timestamp,
         ];
-        $this->_database->prepareAndExecute($updateQuery, $updateParams);
+        $this->_articles->updateOne(
+            ['_id' => $articleId],
+            ['$set' => $updateFields]
+        );
 
         if (isset($payload['lots'])) {
-            $deleteLotsQuery  = "
-                DELETE FROM lots
-                WHERE article = :id
-            ";
-            $deleteLotsParams = [':id' => $articleId];
-            $this->_database->prepareAndExecute($deleteLotsQuery, $deleteLotsParams);
+            $this->_database->lots->deleteMany(
+                ['article' => $articleId]
+            );
 
             $this->_insertLots($articleId, $payload['lots']);
-        }
-
-        if (isset($payload['gtins'])) {
-            $deleteGtinsQuery  = "
-                DELETE FROM gtins
-                WHERE article = :id
-            ";
-            $deleteGtinsParams = [':id' => $articleId];
-            $this->_database->prepareAndExecute($deleteGtinsQuery, $deleteGtinsParams);
-
-            $this->_insertGtins($articleId, $payload['gtins']);
         }
 
         Http::sendNoContent();
@@ -257,46 +253,24 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 24.04.2022
+     * @version 01.05.2023
      */
     public function resetArticle(int $articleId)
     {
-        $payload     = Helpers::getPayload();
-        $idParams    = [':id' => $articleId];
         $inventoried = $this->_getInventoriedStatus();
 
-        if (isset($payload['timestamp'])) {
-            $timestamp = $payload['timestamp'];
+        $this->_database->lots->deleteMany(
+            ['article' => $articleId]
+        );
 
-            $currentQuery     = "SELECT timestamp FROM articles WHERE id = :id";
-            $currentStatement = $this->_database->prepareAndExecute($currentQuery, $idParams);
-            $currentTimestamp = $currentStatement->fetchColumn(0);
-
-            if ($timestamp < $currentTimestamp) {
-                $this->returnArticle($articleId);
-            }
-        } else {
-            $timestamp = time();
-        }
-
-        $deleteLotsQuery = "
-            DELETE FROM lots
-            WHERE article = :id
-        ";
-        $this->_database->prepareAndExecute($deleteLotsQuery, $idParams);
-
-        $updateArticleQuery  = "
-            UPDATE articles SET
-                inventoried = :inventoried,
-                timestamp = :timestamp
-            WHERE id = :id
-        ";
-        $updateArticleParams = [
-            ':id'          => $articleId,
-            ':inventoried' => $inventoried,
-            ':timestamp'   => $timestamp,
+        $updateFields = [
+            'inventoried' => $inventoried,
+            'timestamp'   => $this->_database->nowTimestamp,
         ];
-        $this->_database->prepareAndExecute($updateArticleQuery, $updateArticleParams);
+        $this->_articles->updateOne(
+            ['_id' => $articleId],
+            ['$set' => $updateFields]
+        );
 
         $this->returnArticle($articleId);
     }
@@ -309,11 +283,11 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function moveDown(int $articleId)
     {
-        $this->_moveArticle($articleId, ">", "ASC");
+        $this->_moveArticle($articleId, false);
     }
 
     /**
@@ -324,40 +298,11 @@ class ArticlesController
      * @return  void
      * @access  public
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     public function moveUp(int $articleId)
     {
-        $this->_moveArticle($articleId, "<", "DESC");
-    }
-
-    /**
-     * Returns the article with its lots.
-     *
-     * @param integer $articleId ID of the article to return.
-     *
-     * @return  Article Article entity, with properties `lots` and `gtins` set.
-     * @access  private
-     * @author  Raphael Horber
-     * @version 04.04.2022
-     */
-    private function _getArticle(int $articleId): Article
-    {
-        $params = [':id' => $articleId];
-
-        $articleQuery     = "SELECT * FROM articles WHERE id = :id";
-        $articleStatement = $this->_database->prepareAndExecute($articleQuery, $params);
-        $article          = $articleStatement->fetch();
-
-        $lotsQuery       = "SELECT * FROM lots WHERE article = :id";
-        $lotsStatement   = $this->_database->prepareAndExecute($lotsQuery, $params);
-        $article['lots'] = $lotsStatement->fetchAll();
-
-        $gtinsQuery       = "SELECT gtin FROM gtins WHERE article = :id ORDER BY gtin";
-        $gtinsStatement   = $this->_database->prepareAndExecute($gtinsQuery, $params);
-        $article['gtins'] = $gtinsStatement->fetchAll(\PDO::FETCH_COLUMN, 0);
-
-        return Article::mapToEntity($article);
+        $this->_moveArticle($articleId, true);
     }
 
     /**
@@ -387,19 +332,15 @@ class ArticlesController
      * @return  integer
      * @access  private
      * @author  Raphael Horber
-     * @version 05.08.2020
+     * @version 01.05.2023
      */
     private function _getNextPositionInCategory(int $categoryId): int
     {
-        $maxQuery  = "
-            SELECT COALESCE(MAX(position), 0) + 1 AS new_position
-            FROM articles
-            WHERE category = :category
-        ";
-        $maxParams = [':category' => $categoryId];
-
-        $maxStatement = $this->_database->prepareAndExecute($maxQuery, $maxParams);
-        $position     = $maxStatement->fetchColumn(0);
+        $position = $this->_database->getNextValue(
+            $this->_articles,
+            "position",
+            ['category' => $categoryId]
+        );
 
         return $position;
     }
@@ -413,142 +354,91 @@ class ArticlesController
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 12.08.2021
+     * @version 01.05.2023
      */
     private function _insertLots(int $articleId, array $lots)
     {
-        $query     = "
-            INSERT INTO lots (
-                article, best_before, stock, position, timestamp
-            ) VALUES (
-                :article, :best_before, :stock, :position, :timestamp
-            )
-        ";
-        $statement = $this->_database->prepare($query);
+        if (empty($lots)) {
+            return;
+        }
 
-        $position = 0;
+        $lotId = $this->_database->getNextValue(
+            $this->_database->lots,
+            "_id"
+        );
+
+        $documents = [];
+        $position  = 1;
         foreach ($lots as $lot) {
+            $timestamp = $lot['timestamp'] ?? $this->_database->nowTimestamp;
+
+            $document    = [
+                '_id'        => $lotId,
+                'article'    => $articleId,
+                'bestBefore' => $lot['best_before'],
+                'stock'      => $lot['stock'],
+                'position'   => $position,
+                'timestamp'  => $timestamp,
+            ];
+            $documents[] = $document;
+
+            $lotId++;
             $position++;
-            $timestamp = $lot['timestamp'] ?? time();
-
-            $params = [
-                ':article'     => $articleId,
-                ':best_before' => $lot['best_before'],
-                ':stock'       => $lot['stock'],
-                ':position'    => $position,
-                ':timestamp'   => $timestamp,
-            ];
-            $statement->execute($params);
         }
-    }
 
-    /**
-     * Inserts the article's GTIN numbers from the passed payload.
-     *
-     * @param integer $articleId ID of the article to insert the lots for.
-     * @param array   $gtins     gtins element from the payload.
-     *
-     * @return  void
-     * @access  private
-     * @author  Raphael Horber
-     * @version 07.03.2022
-     */
-    private function _insertGtins(int $articleId, array $gtins)
-    {
-        $query     = "
-            INSERT INTO gtins (
-                article, gtin
-            ) VALUES (
-                :article, :gtin
-            )
-        ";
-        $statement = $this->_database->prepare($query);
-
-        foreach ($gtins as $gtin) {
-            $params = [
-                ':article' => $articleId,
-                ':gtin'    => $gtin,
-            ];
-            $statement->execute($params);
-        }
+        $this->_database->lots->insertMany($documents);
     }
 
     /**
      * Moves the article one position up or down.
      *
-     * @param integer $articleId       ID of the article to move.
-     * @param string  $compareOperator Comparator used to find the other article to swap with
-     *                                 (">" or "<" for down or up respectively).
-     * @param string  $sortDirection   Sort direction used to find the other article to swap with
-     *                                 ("ASC" or "DESC" for down or up respectively).
+     * @param integer $articleId ID of the article to move.
+     * @param boolean $moveUp    Whether to move the document up (decrease position).
      *
      * @return  void
      * @access  private
      * @author  Raphael Horber
-     * @version 20.08.2020
+     * @version 01.05.2023
      */
-    private function _moveArticle(int $articleId, string $compareOperator, string $sortDirection)
+    private function _moveArticle(int $articleId, bool $moveUp)
     {
-        $queryThisQuery  = "
-            SELECT category, position
-            FROM articles
-            WHERE id = :id
-        ";
-        $queryThisParams = [':id' => $articleId];
+        // Get properties of the article to move.
+        $article = $this->_articles->findOne(
+            ['_id' => $articleId],
+            ['projection' => ['category' => 1, 'position' => 1]]
+        );
 
-        $thisStatement = $this->_database->prepareAndExecute($queryThisQuery, $queryThisParams);
-        $thisArticle   = $thisStatement->fetch();
-
-        $queryOtherQuery  = "
-            SELECT id, position
-            FROM articles
-            WHERE category = :category
-                AND position ".$compareOperator." :position
-            ORDER BY position ".$sortDirection."
-            LIMIT 1
-        ";
-        $queryOtherParams = [
-            ':category' => $thisArticle['category'],
-            ':position' => $thisArticle['position'],
+        // Move articles.
+        $filter   = [
+            'category' => $article['category'],
         ];
+        $articles = $this->_database->moveDocument(
+            $this->_articles,
+            $articleId,
+            $article['position'],
+            $moveUp,
+            $filter
+        );
 
-        $otherStatement = $this->_database->prepareAndExecute($queryOtherQuery, $queryOtherParams);
-        $otherArticle   = $otherStatement->fetch();
+        // Proceed only if any articles were moved.
+        if ($articles === false) {
+            Http::sendBadRequest();
+        }
 
-        $moveThisQuery     = "
-            UPDATE articles SET
-                position = :position,
-                timestamp = :timestamp
-            WHERE id = :id
-        ";
-        $moveThisStatement = $this->_database->prepare($moveThisQuery);
-
-        $moveThisParams = [
-            ':id'        => $articleId,
-            ':position'  => $otherArticle['position'],
-            ':timestamp' => time(),
+        // Return the updated articles.
+        $idFilter = [
+            '$in' => array_column($articles, '_id'),
         ];
-        $moveThisStatement->execute($moveThisParams);
-
-        $moveOtherQuery     = "
-            UPDATE articles SET
-                position = :position
-            WHERE id = :id
-        ";
-        $moveOtherStatement = $this->_database->prepare($moveOtherQuery);
-
-        $moveOtherParams = [
-            ':id'       => $otherArticle['id'],
-            ':position' => $thisArticle['position'],
+        $filter   = [
+            '_id' => $idFilter,
         ];
-        $moveOtherStatement->execute($moveOtherParams);
+        $entities = self::getArticleEntities(
+            $this->_database,
+            $filter
+        );
 
-        $articles = [
-            $this->_getArticle($articleId),
-            $this->_getArticle($otherArticle['id']),
-        ];
+        $response = ['articles' => $entities];
 
-        $response = ['articles' => $articles];
         Http::sendJsonResponse($response);
     }
 }
